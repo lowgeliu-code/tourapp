@@ -3,7 +3,7 @@ import { Home, Calendar, Map, CheckSquare, User, MapPin, ChevronRight, Bell, Ext
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
 
-// 1. 貼上您專屬的 Firebase 金鑰
+// 1. 您的 Firebase 金鑰 (已帶入)
 const firebaseConfig = {
   apiKey: "AIzaSyAzO6RTxbdgy1eOUJzWVXa10BD09TBZYCc",
   authDomain: "tourapp-d7926.firebaseapp.com",
@@ -13,47 +13,45 @@ const firebaseConfig = {
   appId: "1:907439445985:web:c86296309a31a8c3eea4a0"
 };
 
-// 2. 啟動資料庫
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// 預設資料 (當雲端沒有資料時的備用方案)
+const defaultData = {
+  brandName: "FUTUREPNP",
+  eventTitle: "Highly-functional\nMaterial Week 2026",
+  eventLocation: "幕張メッセ (Makuhari Messe)",
+  eventDate: "2026.09.29 — 10.03",
+  announcement: "小提醒～9:50記得帶著展覽票在Hall 2集合喔！",
+  nextTime: "9:45",
+  nextLocation: "桃園機場集合",
+  nextDetail: "T2華航 團體報到櫃檯"
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // 3. 準備雲端資料的狀態
-  const [appData, setAppData] = useState({
-    announcement: "載入中...",
-    nextTime: "...",
-    nextLocation: "載入中...",
-    nextDetail: "..."
-  });
-  
-  // 編輯模式用的暫存資料
-  const [editData, setEditData] = useState({});
+  const [appData, setAppData] = useState(defaultData);
+  const [editData, setEditData] = useState(defaultData);
 
-  // 4. 即時監聽雲端資料庫
+  // 即時監聽雲端資料庫
   useEffect(() => {
     const docRef = doc(db, 'tourConfig', 'mainContent');
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        setAppData(docSnap.data());
-        setEditData(docSnap.data()); // 同步給編輯器
+        // 合併新舊資料，確保擴充的新欄位不會消失
+        const serverData = docSnap.data();
+        setAppData({ ...defaultData, ...serverData });
+        setEditData({ ...defaultData, ...serverData }); 
       } else {
-        // 如果是第一次使用，自動建立預設資料
-        const defaultData = {
-          announcement: "小提醒～9:50記得帶著展覽票在Hall 2集合喔！",
-          nextTime: "9:45",
-          nextLocation: "桃園機場集合",
-          nextDetail: "T2華航 團體報到櫃檯"
-        };
         setDoc(docRef, defaultData);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // 行前準備的個人紀錄 (存在手機本地，不放雲端)
+  // 行前準備的個人紀錄
   const [checklist, setChecklist] = useState(() => {
     const saved = localStorage.getItem('tour_checklist');
     return saved ? JSON.parse(saved) : {};
@@ -67,7 +65,7 @@ export default function App() {
     setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // 儲存編輯內容到雲端
+  // 儲存編輯內容
   const handleSaveToCloud = async () => {
     try {
       await setDoc(doc(db, 'tourConfig', 'mainContent'), editData);
@@ -78,7 +76,6 @@ export default function App() {
     }
   };
 
-  // 管理員登入機制
   const handleAdminLogin = () => {
     if (isAdmin) {
       setIsAdmin(false);
@@ -98,68 +95,114 @@ export default function App() {
       case 'home':
         return (
           <div className="p-4 space-y-4 animate-in fade-in duration-300">
-            {/* 頂部橫幅 */}
+            {/* 頂部橫幅 (動態帶入 appData 資料) */}
             <div className="bg-blue-900 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
               <div className="relative z-10">
-                <h2 className="text-3xl font-bold italic mb-2 tracking-tight">Highly-functional<br/>Material Week 2026</h2>
+                <h2 className="text-3xl font-bold italic mb-2 tracking-tight whitespace-pre-line">
+                  {appData.eventTitle}
+                </h2>
                 <div className="flex items-center text-sm opacity-90 mt-4">
-                  <MapPin size={16} className="mr-1" />
-                  <span>幕張メッセ (Makuhari Messe)</span>
+                  <MapPin size={16} className="mr-1 min-w-[16px]" />
+                  <span>{appData.eventLocation}</span>
                 </div>
-                <div className="text-sm opacity-90 mt-1">2026.09.29 — 10.03</div>
+                <div className="text-sm opacity-90 mt-1">{appData.eventDate}</div>
               </div>
             </div>
             
             {isAdmin ? (
               /* --- 管理員編輯介面 --- */
               <div className="bg-yellow-50 border-2 border-yellow-400 p-5 rounded-2xl shadow-sm">
-                <div className="flex items-center text-yellow-700 font-bold mb-4">
+                <div className="flex items-center text-yellow-700 font-bold mb-4 text-lg">
                   <Edit3 size={20} className="mr-2" />
                   管理員編輯模式
                 </div>
                 
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1 block">重要公告</label>
-                    <textarea 
-                      className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white" 
-                      rows="2"
-                      value={editData.announcement}
-                      onChange={(e) => setEditData({...editData, announcement: e.target.value})}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="w-1/3">
-                      <label className="text-xs font-bold text-gray-500 mb-1 block">時間</label>
+                <div className="space-y-4">
+                  {/* 新增：大會資訊設定區塊 */}
+                  <div className="bg-white p-4 rounded-xl border border-yellow-200 shadow-sm space-y-3">
+                    <div className="text-sm font-bold text-yellow-800 border-b border-yellow-100 pb-2 mb-2">📌 大會基本資訊</div>
+                    
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">頂部品牌名稱</label>
                       <input 
-                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white font-bold" 
-                        value={editData.nextTime}
-                        onChange={(e) => setEditData({...editData, nextTime: e.target.value})}
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50 font-bold" 
+                        value={editData.brandName}
+                        onChange={(e) => setEditData({...editData, brandName: e.target.value})}
                       />
                     </div>
-                    <div className="w-2/3">
-                      <label className="text-xs font-bold text-gray-500 mb-1 block">下一站地點</label>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">活動大標題 (可換行)</label>
+                      <textarea 
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50 font-bold" 
+                        rows="2"
+                        value={editData.eventTitle}
+                        onChange={(e) => setEditData({...editData, eventTitle: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">展覽地點</label>
                       <input 
-                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white font-bold" 
-                        value={editData.nextLocation}
-                        onChange={(e) => setEditData({...editData, nextLocation: e.target.value})}
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50" 
+                        value={editData.eventLocation}
+                        onChange={(e) => setEditData({...editData, eventLocation: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">活動日期</label>
+                      <input 
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50" 
+                        value={editData.eventDate}
+                        onChange={(e) => setEditData({...editData, eventDate: e.target.value})}
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1 block">地點補充說明 (選填)</label>
-                    <input 
-                      className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white text-gray-500" 
-                      value={editData.nextDetail}
-                      onChange={(e) => setEditData({...editData, nextDetail: e.target.value})}
-                    />
+
+                  {/* 原本的：行程與公告設定區塊 */}
+                  <div className="bg-white p-4 rounded-xl border border-yellow-200 shadow-sm space-y-3">
+                    <div className="text-sm font-bold text-yellow-800 border-b border-yellow-100 pb-2 mb-2">🚀 即時動態與行程</div>
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">重要公告</label>
+                      <textarea 
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50" 
+                        rows="2"
+                        value={editData.announcement}
+                        onChange={(e) => setEditData({...editData, announcement: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-1/3">
+                        <label className="text-xs font-bold text-gray-500 mb-1 block">時間</label>
+                        <input 
+                          className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50 font-bold" 
+                          value={editData.nextTime}
+                          onChange={(e) => setEditData({...editData, nextTime: e.target.value})}
+                        />
+                      </div>
+                      <div className="w-2/3">
+                        <label className="text-xs font-bold text-gray-500 mb-1 block">下一站地點</label>
+                        <input 
+                          className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50 font-bold" 
+                          value={editData.nextLocation}
+                          onChange={(e) => setEditData({...editData, nextLocation: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">地點補充說明 (選填)</label>
+                      <input 
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-gray-50 text-gray-500" 
+                        value={editData.nextDetail}
+                        onChange={(e) => setEditData({...editData, nextDetail: e.target.value})}
+                      />
+                    </div>
                   </div>
                   
                   <button 
                     onClick={handleSaveToCloud}
-                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mt-2 flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all"
+                    className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl mt-4 flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all text-lg shadow-md"
                   >
-                    <Save size={20} className="mr-2" />
+                    <Save size={24} className="mr-2" />
                     發佈並同步給所有客戶
                   </button>
                 </div>
@@ -191,7 +234,7 @@ export default function App() {
                     <div className="text-sm font-bold text-gray-600">{appData.nextLocation}</div>
                     {appData.nextDetail && (
                       <div className="text-xs text-gray-400 mt-2 flex items-center">
-                        <MapPin size={12} className="mr-1" /> {appData.nextDetail}
+                        <MapPin size={12} className="mr-1 min-w-[12px]" /> {appData.nextDetail}
                       </div>
                     )}
                   </div>
@@ -280,7 +323,7 @@ export default function App() {
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-24 font-sans shadow-2xl relative">
       <div className="bg-white text-center py-4 border-b border-gray-100 shadow-sm sticky top-0 z-20 flex justify-center items-center">
-        <div className="text-blue-700 font-black text-xl tracking-tight">FUTUREPNP</div>
+        <div className="text-blue-700 font-black text-xl tracking-tight">{appData.brandName}</div>
         {isAdmin && <span className="absolute right-4 text-[10px] bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold">編輯模式</span>}
       </div>
       
