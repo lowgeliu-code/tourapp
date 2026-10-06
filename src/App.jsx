@@ -28,7 +28,7 @@ const defaultData = {
   itinerary: {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
       { 
-        time: "9:45", endTime: "", icon: "activity", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
+        time: "9:45", endTime: "", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "展覽手冊", url: "" }],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
@@ -90,7 +90,8 @@ export default function App() {
   const [appData, setAppData] = useState(defaultData);
   const [editData, setEditData] = useState(defaultData);
 
-  const [modalContent, setModalContent] = useState(null);
+  // 彈跳視窗 Modal 狀態
+  const [modalContent, setModalContent] = useState(null); // { eventTitle: "", title: "", text: "" }
 
   useEffect(() => {
     const docRef = doc(db, 'tourConfig', 'mainContent');
@@ -304,7 +305,6 @@ export default function App() {
     });
   };
 
-  // 資訊卡片管理函式
   const handleInfoCardChange = (cardIdx, field, value) => {
     setEditData(prev => {
       const cards = [...(prev?.infoCards || [])];
@@ -662,9 +662,10 @@ export default function App() {
                             </a>
                           ) : null)}
 
+                          {/* 點擊後彈出視窗，標題帶有該行程名稱 (例如：展覽攤位A - 📌 研究重點摘要) */}
                           {ev?.showResearch && ev?.researchPoint && (
                             <button 
-                              onClick={() => setModalContent({ title: "📌 研究重點摘要", text: ev.researchPoint })}
+                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: "📌 研究重點摘要", text: ev.researchPoint })}
                               className="flex items-center text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-lg shadow-sm transition-all"
                             >
                               📌 研究重點
@@ -673,7 +674,7 @@ export default function App() {
 
                           {ev?.showResearch && ev?.researchQA && (
                             <button 
-                              onClick={() => setModalContent({ title: "❓ 預計 QA 討論", text: ev.researchQA })}
+                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: "❓ 預計 QA 討論", text: ev.researchQA })}
                               className="flex items-center text-[10px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-lg shadow-sm transition-all"
                             >
                               ❓ 預計 QA
@@ -809,7 +810,6 @@ export default function App() {
               </div>
             )}
 
-            {/* 讀取模式：精美渲染所有資訊卡片 (無冗員頭像，只保留乾淨大標題與所選圖示) */}
             <div className="space-y-4">
               {(displayData?.infoCards || []).map((card, cIdx) => (
                 <div key={card?.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
@@ -868,6 +868,7 @@ export default function App() {
         </div>
       )}
 
+      {/* 彈跳視窗 Modal (標題左上角自動帶入行程名稱，防止點錯) */}
       {modalContent && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 space-y-4 font-mono relative">
@@ -877,7 +878,10 @@ export default function App() {
             >
               <X size={16} />
             </button>
-            <div className="text-base font-black text-[#0F172A] border-b pb-2">{modalContent.title}</div>
+            <div>
+              <div className="text-xs font-bold text-[#2563EB] mb-1">📍 {modalContent.eventTitle}</div>
+              <div className="text-base font-black text-[#0F172A] border-b pb-2">{modalContent.title}</div>
+            </div>
             <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed max-h-60 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-gray-200">
               {modalContent.text}
             </div>
