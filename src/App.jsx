@@ -79,11 +79,12 @@ export default function App() {
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const serverData = docSnap.data();
-        // 確保雲端沒有 infoCards 時自動補上預設值，防止當機
         const mergedData = {
           ...defaultData,
           ...serverData,
-          infoCards: (serverData.infoCards && serverData.infoCards.length > 0) ? serverData.infoCards : defaultData.infoCards
+          infoCards: (serverData?.infoCards && Array.isArray(serverData.infoCards) && serverData.infoCards.length > 0) 
+            ? serverData.infoCards 
+            : defaultData.infoCards
         };
         setAppData(mergedData);
         setEditData(mergedData); 
@@ -95,12 +96,18 @@ export default function App() {
   }, []);
 
   const [userChecklist, setUserChecklist] = useState(() => {
-    const saved = localStorage.getItem('tour_user_checklist');
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem('tour_user_checklist');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
   });
 
   useEffect(() => {
-    localStorage.setItem('tour_user_checklist', JSON.stringify(userChecklist));
+    try {
+      localStorage.setItem('tour_user_checklist', JSON.stringify(userChecklist));
+    } catch (e) {}
   }, [userChecklist]);
 
   const toggleCheck = (id) => {
@@ -133,8 +140,8 @@ export default function App() {
 
   const handleEventChange = (day, index, field, value) => {
     setEditData(prev => {
-      const updatedEvents = [...prev.itinerary[day].events];
-      updatedEvents[index] = { ...updatedEvents[index], [field]: value };
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      updatedEvents[index] = { ...(updatedEvents[index] || {}), [field]: value };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -144,10 +151,10 @@ export default function App() {
 
   const handleAttachmentChange = (day, eventIndex, attIndex, field, value) => {
     setEditData(prev => {
-      const updatedEvents = [...prev.itinerary[day].events];
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const atts = [...(currentEv.attachments || [{ name: "", url: "" }])];
-      atts[attIndex] = { ...atts[attIndex], [field]: value };
+      const atts = [...(currentEv?.attachments || [{ name: "", url: "" }])];
+      atts[attIndex] = { ...(atts[attIndex] || {}), [field]: value };
       updatedEvents[eventIndex] = { ...currentEv, attachments: atts };
       return {
         ...prev,
@@ -158,10 +165,9 @@ export default function App() {
 
   const addAttachment = (day, eventIndex) => {
     setEditData(prev => {
-      const updatedEvents = [...prev.itinerary[day].events];
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const atts = [...(currentEv.attachments || [{ name: "", url: "" }])];
-      atts.push({ name: "", url: "" });
+      const atts = [...(currentEv?.attachments || [{ name: "", url: "" }]), { name: "", url: "" }];
       updatedEvents[eventIndex] = { ...currentEv, attachments: atts };
       return {
         ...prev,
@@ -172,9 +178,9 @@ export default function App() {
 
   const removeAttachment = (day, eventIndex, attIndex) => {
     setEditData(prev => {
-      const updatedEvents = [...prev.itinerary[day].events];
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const atts = [...(currentEv.attachments || [{ name: "", url: "" }])];
+      const atts = [...(currentEv?.attachments || [{ name: "", url: "" }])];
       atts.splice(attIndex, 1);
       updatedEvents[eventIndex] = { ...currentEv, attachments: atts.length > 0 ? atts : [{ name: "", url: "" }] };
       return {
@@ -186,7 +192,7 @@ export default function App() {
 
   const addEvent = (day) => {
     setEditData(prev => {
-      const updatedEvents = [...prev.itinerary[day].events];
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       updatedEvents.push({ time: "12:00", endTime: "", icon: "pin", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", attachments: [{ name: "", url: "" }] });
       return {
         ...prev,
@@ -198,7 +204,7 @@ export default function App() {
   const removeEvent = (day, index) => {
     if(window.confirm('確定要移除此項活動？')){
       setEditData(prev => {
-        const updatedEvents = [...prev.itinerary[day].events];
+        const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
         updatedEvents.splice(index, 1);
         return {
           ...prev,
@@ -210,7 +216,7 @@ export default function App() {
 
   const moveEvent = (day, index, direction) => {
     setEditData(prev => {
-      const updatedEvents = [...prev.itinerary[day].events];
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const targetIndex = direction === 'up' ? index - 1 : index + 1;
 
       if (targetIndex < 0 || targetIndex >= updatedEvents.length) return prev;
@@ -228,11 +234,11 @@ export default function App() {
 
   const addDay = () => {
     setEditData(prev => {
-      const daysCount = Object.keys(prev.itinerary).length + 1;
+      const daysCount = Object.keys(prev?.itinerary || {}).length + 1;
       return {
         ...prev,
         itinerary: {
-          ...prev.itinerary,
+          ...(prev?.itinerary || {}),
           [daysCount]: { date: "10/4", weekday: "週日", title: "延伸考察行程", events: [] }
         }
       };
@@ -246,7 +252,7 @@ export default function App() {
     }
     if (window.confirm(`確定要刪除 DAY ${dayNum} 及其所有活動？`)) {
       setEditData(prev => {
-        const newItin = { ...prev.itinerary };
+        const newItin = { ...(prev?.itinerary || {}) };
         delete newItin[dayNum];
         return { ...prev, itinerary: newItin };
       });
@@ -256,8 +262,8 @@ export default function App() {
 
   const handleChecklistChange = (index, value) => {
     setEditData(prev => {
-      const newCl = [...prev.checklist];
-      newCl[index] = { ...newCl[index], label: value };
+      const newCl = [...(prev?.checklist || [])];
+      newCl[index] = { ...(newCl[index] || {}), label: value };
       return { ...prev, checklist: newCl };
     });
   };
@@ -265,13 +271,13 @@ export default function App() {
   const addChecklistItem = () => {
     setEditData(prev => ({
       ...prev,
-      checklist: [...prev.checklist, { id: Date.now().toString(), label: '新增裝備項目' }]
+      checklist: [...(prev?.checklist || []), { id: Date.now().toString(), label: '新增裝備項目' }]
     }));
   };
 
   const removeChecklistItem = (index) => {
     setEditData(prev => {
-      const newCl = [...prev.checklist];
+      const newCl = [...(prev?.checklist || [])];
       newCl.splice(index, 1);
       return { ...prev, checklist: newCl };
     });
@@ -280,7 +286,7 @@ export default function App() {
   // 資訊卡片安全管理函式
   const handleInfoCardChange = (cardIdx, field, value) => {
     setEditData(prev => {
-      const cards = [...(prev.infoCards || [])];
+      const cards = [...(prev?.infoCards || [])];
       if (!cards[cardIdx]) cards[cardIdx] = {};
       cards[cardIdx] = { ...cards[cardIdx], [field]: value };
       return { ...prev, infoCards: cards };
@@ -289,9 +295,9 @@ export default function App() {
 
   const handleInfoFieldChange = (cardIdx, fieldIdx, subField, value) => {
     setEditData(prev => {
-      const cards = [...(prev.infoCards || [])];
+      const cards = [...(prev?.infoCards || [])];
       if (!cards[cardIdx]) cards[cardIdx] = {};
-      const fields = [...(cards[cardIdx].fields || [])];
+      const fields = [...(cards[cardIdx]?.fields || [])];
       if (!fields[fieldIdx]) fields[fieldIdx] = {};
       fields[fieldIdx] = { ...fields[fieldIdx], [subField]: value };
       cards[cardIdx] = { ...cards[cardIdx], fields: fields };
@@ -301,9 +307,9 @@ export default function App() {
 
   const addInfoField = (cardIdx) => {
     setEditData(prev => {
-      const cards = [...(prev.infoCards || [])];
+      const cards = [...(prev?.infoCards || [])];
       if (!cards[cardIdx]) cards[cardIdx] = {};
-      const fields = [...(cards[cardIdx].fields || []), { label: "新項目", value: "詳細內容" }];
+      const fields = [...(cards[cardIdx]?.fields || []), { label: "新項目", value: "詳細內容" }];
       cards[cardIdx] = { ...cards[cardIdx], fields: fields };
       return { ...prev, infoCards: cards };
     });
@@ -311,9 +317,9 @@ export default function App() {
 
   const removeInfoField = (cardIdx, fieldIdx) => {
     setEditData(prev => {
-      const cards = [...(prev.infoCards || [])];
+      const cards = [...(prev?.infoCards || [])];
       if (!cards[cardIdx]) return prev;
-      const fields = [...(cards[cardIdx].fields || [])];
+      const fields = [...(cards[cardIdx]?.fields || [])];
       fields.splice(fieldIdx, 1);
       cards[cardIdx] = { ...cards[cardIdx], fields: fields };
       return { ...prev, infoCards: cards };
@@ -324,7 +330,7 @@ export default function App() {
     setEditData(prev => ({
       ...prev,
       infoCards: [
-        ...(prev.infoCards || []),
+        ...(prev?.infoCards || []),
         {
           id: Date.now().toString(),
           title: "新增資訊卡片",
@@ -339,7 +345,7 @@ export default function App() {
   const removeInfoCard = (cardIdx) => {
     if (window.confirm("確定要刪除這張資訊卡片嗎？")) {
       setEditData(prev => {
-        const cards = [...(prev.infoCards || [])];
+        const cards = [...(prev?.infoCards || [])];
         cards.splice(cardIdx, 1);
         return { ...prev, infoCards: cards };
       });
@@ -358,7 +364,7 @@ export default function App() {
   };
 
   const displayData = isAdmin ? editData : appData;
-  const currentDay = displayData.itinerary[selectedDay] || displayData.itinerary[1];
+  const currentDay = displayData?.itinerary?.[selectedDay] || displayData?.itinerary?.[1] || { title: "", events: [] };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -373,20 +379,20 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] text-gray-500 block mb-0.5">品牌名稱</label>
-                    <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.brandName || ""} onChange={(e) => setEditData({...editData, brandName: e.target.value})} />
+                    <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData?.brandName || ""} onChange={(e) => setEditData({...editData, brandName: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] text-gray-500 block mb-0.5">展會日期</label>
-                    <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventDate || ""} onChange={(e) => setEditData({...editData, eventDate: e.target.value})} />
+                    <input className="w-full text-xs border rounded p-1 bg-white" value={editData?.eventDate || ""} onChange={(e) => setEditData({...editData, eventDate: e.target.value})} />
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-500 block mb-0.5">活動大標題</label>
-                  <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.eventTitle || ""} onChange={(e) => setEditData({...editData, eventTitle: e.target.value})} />
+                  <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData?.eventTitle || ""} onChange={(e) => setEditData({...editData, eventTitle: e.target.value})} />
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-500 block mb-0.5">展覽地點</label>
-                  <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventLocation || ""} onChange={(e) => setEditData({...editData, eventLocation: e.target.value})} />
+                  <input className="w-full text-xs border rounded p-1 bg-white" value={editData?.eventLocation || ""} onChange={(e) => setEditData({...editData, eventLocation: e.target.value})} />
                 </div>
               </div>
             )}
@@ -394,12 +400,12 @@ export default function App() {
             <div className="bg-[#1A2332] text-[#E2E8F0] p-5 rounded shadow-md border-l-4 border-[#3B82F6] mb-6 relative overflow-hidden font-mono">
               <div className="relative z-10">
                 <div className="text-[10px] tracking-widest text-[#60A5FA] mb-1">EQUITY RESEARCH // 2026</div>
-                <h2 className="text-xl font-black tracking-tight">{displayData.eventTitle}</h2>
+                <h2 className="text-xl font-black tracking-tight">{displayData?.eventTitle}</h2>
                 <div className="flex items-center text-xs opacity-80 mt-3">
                   <MapPin size={13} className="mr-1 text-[#60A5FA] shrink-0" />
-                  <span>{displayData.eventLocation}</span>
+                  <span>{displayData?.eventLocation}</span>
                 </div>
-                <div className="text-xs opacity-70 mt-0.5">{displayData.eventDate}</div>
+                <div className="text-xs opacity-70 mt-0.5">{displayData?.eventDate}</div>
               </div>
             </div>
 
@@ -415,21 +421,21 @@ export default function App() {
             </p>
 
             <div className="sticky top-14 z-50 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1">
-              {Object.keys(displayData.itinerary || {}).map((dayNumStr) => {
+              {Object.keys(displayData?.itinerary || {}).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
-                const dayInfo = displayData.itinerary[dayNum];
+                const dayInfo = displayData?.itinerary?.[dayNum] || {};
                 return (
                   <div key={dayNum} className="relative group shrink-0">
                     <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono focus:outline-none focus:ring-0 ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white border border-gray-200'}`}>
                       <span className="text-[8px] opacity-80">D-{dayNum}</span>
                       {isAdmin ? (
                         <div className="space-y-0.5 text-center">
-                          <input className="w-9 text-center text-[10px] font-black bg-white border rounded text-[#1E293B] focus:outline-none" value={dayInfo.date} onChange={(e) => {
+                          <input className="w-9 text-center text-[10px] font-black bg-white border rounded text-[#1E293B] focus:outline-none" value={dayInfo?.date || ""} onChange={(e) => {
                             const newItin = {...editData.itinerary};
                             newItin[dayNum].date = e.target.value;
                             setEditData({...editData, itinerary: newItin});
                           }} />
-                          <input className="w-9 text-center text-[8px] bg-white border rounded text-gray-500 focus:outline-none" value={dayInfo.weekday} onChange={(e) => {
+                          <input className="w-9 text-center text-[8px] bg-white border rounded text-gray-500 focus:outline-none" value={dayInfo?.weekday || ""} onChange={(e) => {
                             const newItin = {...editData.itinerary};
                             newItin[dayNum].weekday = e.target.value;
                             setEditData({...editData, itinerary: newItin});
@@ -437,8 +443,8 @@ export default function App() {
                         </div>
                       ) : (
                         <>
-                          <span className="text-[11px] font-black">{dayInfo.date}</span>
-                          <span className="text-[8px] opacity-70">{dayInfo.weekday}</span>
+                          <span className="text-[11px] font-black">{dayInfo?.date}</span>
+                          <span className="text-[8px] opacity-70">{dayInfo?.weekday}</span>
                         </>
                       )}
                     </button>
@@ -462,18 +468,18 @@ export default function App() {
             <div className="text-center border-b border-[#CBD5E1] pb-4 mb-5">
               <span className="bg-[#1E293B] text-white font-mono text-[9px] font-bold px-2.5 py-0.5 rounded mb-1.5 inline-block tracking-wider">DAY {selectedDay}</span>
               {isAdmin ? (
-                <input className="w-3/4 mx-auto text-center text-base font-bold text-[#0F172A] border-b border-dashed border-gray-400 bg-transparent focus:outline-none block font-mono" value={currentDay.title} onChange={(e) => {
+                <input className="w-3/4 mx-auto text-center text-base font-bold text-[#0F172A] border-b border-dashed border-gray-400 bg-transparent focus:outline-none block font-mono" value={currentDay?.title || ""} onChange={(e) => {
                   const newItin = {...editData.itinerary};
                   newItin[selectedDay].title = e.target.value;
                   setEditData({...editData, itinerary: newItin});
                 }} placeholder="輸入行程主題" />
               ) : (
-                <h3 className="text-base font-bold text-[#0F172A] font-mono">{currentDay.title}</h3>
+                <h3 className="text-base font-bold text-[#0F172A] font-mono">{currentDay?.title}</h3>
               )}
             </div>
 
             <div className="relative">
-              {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => {
+              {currentDay?.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => {
                 return (
                   <div key={idx} className="flex mb-5 relative group font-mono">
                     {idx !== currentDay.events.length - 1 && <div className="absolute left-[66px] top-6 bottom-[-24px] w-[2px] bg-[#CBD5E1] z-0"></div>}
@@ -481,13 +487,13 @@ export default function App() {
                     <div className="w-14 shrink-0 text-right pr-2.5 pt-3">
                       {isAdmin ? (
                         <div className="space-y-1">
-                          <input className="w-full text-right text-xs font-black text-[#0F172A] border border-gray-300 rounded px-1 bg-white" value={ev.time || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'time', e.target.value)} placeholder="09:00" />
-                          <input className="w-full text-right text-[9px] text-gray-500 border border-gray-300 rounded px-1 bg-white" value={ev.endTime || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'endTime', e.target.value)} placeholder="結束" />
+                          <input className="w-full text-right text-xs font-black text-[#0F172A] border border-gray-300 rounded px-1 bg-white" value={ev?.time || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'time', e.target.value)} placeholder="09:00" />
+                          <input className="w-full text-right text-[9px] text-gray-500 border border-gray-300 rounded px-1 bg-white" value={ev?.endTime || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'endTime', e.target.value)} placeholder="結束" />
                         </div>
                       ) : (
                         <>
-                          <div className="text-xs font-black text-[#0F172A]">{ev.time}</div>
-                          {ev.endTime && <div className="text-[9px] text-gray-500">— {ev.endTime}</div>}
+                          <div className="text-xs font-black text-[#0F172A]">{ev?.time}</div>
+                          {ev?.endTime && <div className="text-[9px] text-gray-500">— {ev.endTime}</div>}
                         </>
                       )}
                     </div>
@@ -517,7 +523,7 @@ export default function App() {
                       <div className="flex items-start">
                         <div className="bg-[#F1F5F9] text-[#1E293B] p-2 rounded mr-2.5 shrink-0">
                           {isAdmin ? (
-                            <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon || "pin"} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
+                            <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev?.icon || "pin"} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
                               <option value="pin">📍 地標</option>
                               <option value="plane">✈️ 班機</option>
                               <option value="coffee">☕ 餐飲</option>
@@ -525,22 +531,22 @@ export default function App() {
                               <option value="hotel">🏨 飯店</option>
                               <option value="activity">📅 活動</option>
                             </select>
-                          ) : getEventIcon(ev.icon)}
+                          ) : getEventIcon(ev?.icon)}
                         </div>
                         
                         <div className="flex-1 w-full mr-3">
                           {isAdmin ? (
                             <div className="space-y-1.5 w-full pt-8">
-                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
-                              <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
-                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
+                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev?.title || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
+                              <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev?.subtitle || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
+                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev?.note || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
                               
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
-                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
+                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev?.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">附件列表：</div>
-                                  {(ev.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
+                                  {(ev?.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
                                     <div key={attIdx} className="flex items-center gap-1">
                                       <input 
                                         className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
@@ -567,18 +573,18 @@ export default function App() {
                             </div>
                           ) : (
                             <>
-                              <div className="font-bold text-[#0F172A] text-xs">{ev.title}</div>
-                              {ev.subtitle && <div className="text-[11px] text-gray-600 mt-0.5">{ev.subtitle}</div>}
-                              {ev.note && <div className="text-[10px] text-[#2563EB] mt-1 font-sans">{ev.note}</div>}
+                              <div className="font-bold text-[#0F172A] text-xs">{ev?.title}</div>
+                              {ev?.subtitle && <div className="text-[11px] text-gray-600 mt-0.5">{ev.subtitle}</div>}
+                              {ev?.note && <div className="text-[10px] text-[#2563EB] mt-1 font-sans">{ev.note}</div>}
                             </>
                           )}
                         </div>
                       </div>
                       
-                      {!isAdmin && (ev.mapUrl || (ev.attachments && ev.attachments.some(a => a?.url))) && (
+                      {!isAdmin && (ev?.mapUrl || (ev?.attachments && ev.attachments.some(a => a?.url))) && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
-                          {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
-                          {ev.attachments && ev.attachments.map((att, i) => att?.url ? (
+                          {ev?.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
+                          {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <a key={i} href={att.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
                               <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> {att.name || `附件 ${i + 1}`}
                             </a>
@@ -618,9 +624,9 @@ export default function App() {
             {isAdmin && (
               <div className="bg-[#F8FAFC] border border-[#CBD5E1] p-3 rounded mb-4 space-y-2">
                 <div className="text-xs font-bold text-[#334155] mb-2">🔧 管理員：編輯裝備項目</div>
-                {(displayData.checklist || []).map((item, idx) => (
-                  <div key={item.id || idx} className="flex items-center gap-2">
-                    <input className="flex-1 text-xs border border-gray-300 rounded p-1.5 bg-white" value={item.label || ""} onChange={(e) => handleChecklistChange(idx, e.target.value)} />
+                {(displayData?.checklist || []).map((item, idx) => (
+                  <div key={item?.id || idx} className="flex items-center gap-2">
+                    <input className="flex-1 text-xs border border-gray-300 rounded p-1.5 bg-white" value={item?.label || ""} onChange={(e) => handleChecklistChange(idx, e.target.value)} />
                     <button onClick={() => removeChecklistItem(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100"><Trash2 size={14} /></button>
                   </div>
                 ))}
@@ -631,12 +637,12 @@ export default function App() {
             )}
 
             <div className="bg-white rounded shadow-sm border border-[#CBD5E1] overflow-hidden">
-               {(displayData.checklist || []).map((item) => (
-                 <div key={item.id} onClick={() => toggleCheck(item.id)} className="flex items-center p-3.5 border-b border-[#F1F5F9] last:border-b-0 cursor-pointer hover:bg-[#F8FAFC]">
-                   <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-colors ${userChecklist[item.id] ? 'border-[#1E293B] bg-[#1E293B]' : 'border-[#CBD5E1]'}`}>
-                     {userChecklist[item.id] && <CheckSquare size={13} className="text-white" />}
+               {(displayData?.checklist || []).map((item) => (
+                 <div key={item?.id} onClick={() => toggleCheck(item?.id)} className="flex items-center p-3.5 border-b border-[#F1F5F9] last:border-b-0 cursor-pointer hover:bg-[#F8FAFC]">
+                   <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-colors ${userChecklist[item?.id] ? 'border-[#1E293B] bg-[#1E293B]' : 'border-[#CBD5E1]'}`}>
+                     {userChecklist[item?.id] && <CheckSquare size={13} className="text-white" />}
                    </div>
-                   <span className={`text-xs font-medium ${userChecklist[item.id] ? 'text-gray-400 line-through' : 'text-[#0F172A]'}`}>{item.label}</span>
+                   <span className={`text-xs font-medium ${userChecklist[item?.id] ? 'text-gray-400 line-through' : 'text-[#0F172A]'}`}>{item?.label}</span>
                  </div>
                ))}
             </div>
@@ -662,8 +668,8 @@ export default function App() {
                   </button>
                 </div>
 
-                {(displayData.infoCards || []).map((card, cIdx) => (
-                  <div key={card.id || cIdx} className="bg-white border border-gray-300 p-3 rounded-lg space-y-2.5 shadow-sm">
+                {(displayData?.infoCards || []).map((card, cIdx) => (
+                  <div key={card?.id || cIdx} className="bg-white border border-gray-300 p-3 rounded-lg space-y-2.5 shadow-sm">
                     <div className="flex items-center justify-between gap-2 border-b pb-2">
                       <div className="flex-1 grid grid-cols-2 gap-2">
                         <input className="border rounded p-1 text-[11px] font-bold" value={card?.title || ""} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題" />
@@ -680,7 +686,7 @@ export default function App() {
 
                     <div className="space-y-1.5 pt-1">
                       <div className="text-[10px] font-bold text-gray-500">詳細明細欄位：</div>
-                      {(card.fields || []).map((field, fIdx) => (
+                      {(card?.fields || []).map((field, fIdx) => (
                         <div key={fIdx} className="flex items-center gap-1.5">
                           <input className="w-1/3 border rounded p-1 text-[10px] font-bold" value={field?.label || ""} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'label', e.target.value)} placeholder="項目名" />
                           <input className="flex-1 border rounded p-1 text-[10px]" value={field?.value || ""} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'value', e.target.value)} placeholder="內容" />
@@ -699,8 +705,8 @@ export default function App() {
             )}
 
             <div className="space-y-4">
-              {(displayData.infoCards || []).map((card, cIdx) => (
-                <div key={card.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
+              {(displayData?.infoCards || []).map((card, cIdx) => (
+                <div key={card?.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
                   <div className="p-4 flex items-center border-b border-[#2D3748]">
                     <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
                     <div>
@@ -736,7 +742,7 @@ export default function App() {
     <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
       <div className="bg-white text-center py-3.5 border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 flex justify-center items-center px-4">
         <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
-          <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData.brandName}
+          <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData?.brandName}
         </div>
         {isAdmin && <span className="absolute right-4 text-[9px] bg-[#2563EB] text-white px-2 py-0.5 rounded font-mono font-bold tracking-widest">ADMIN</span>}
       </div>
