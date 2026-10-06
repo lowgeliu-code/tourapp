@@ -43,7 +43,6 @@ const defaultData = {
     { id: '7', label: '商務名片 (充足)' },
     { id: '8', label: '展覽入場 QR Code' }
   ],
-  // 升級為多卡片資訊結構 (包含聯絡人與其他自訂資訊卡片)
   infoCards: [
     {
       id: 'contact_main',
@@ -80,8 +79,14 @@ export default function App() {
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const serverData = docSnap.data();
-        setAppData({ ...defaultData, ...serverData });
-        setEditData({ ...defaultData, ...serverData }); 
+        // 確保雲端沒有 infoCards 時自動補上預設值，防止當機
+        const mergedData = {
+          ...defaultData,
+          ...serverData,
+          infoCards: (serverData.infoCards && serverData.infoCards.length > 0) ? serverData.infoCards : defaultData.infoCards
+        };
+        setAppData(mergedData);
+        setEditData(mergedData); 
       } else {
         setDoc(docRef, defaultData);
       }
@@ -272,10 +277,11 @@ export default function App() {
     });
   };
 
-  // 資訊卡片管理函式
+  // 資訊卡片安全管理函式
   const handleInfoCardChange = (cardIdx, field, value) => {
     setEditData(prev => {
       const cards = [...(prev.infoCards || [])];
+      if (!cards[cardIdx]) cards[cardIdx] = {};
       cards[cardIdx] = { ...cards[cardIdx], [field]: value };
       return { ...prev, infoCards: cards };
     });
@@ -284,7 +290,9 @@ export default function App() {
   const handleInfoFieldChange = (cardIdx, fieldIdx, subField, value) => {
     setEditData(prev => {
       const cards = [...(prev.infoCards || [])];
+      if (!cards[cardIdx]) cards[cardIdx] = {};
       const fields = [...(cards[cardIdx].fields || [])];
+      if (!fields[fieldIdx]) fields[fieldIdx] = {};
       fields[fieldIdx] = { ...fields[fieldIdx], [subField]: value };
       cards[cardIdx] = { ...cards[cardIdx], fields: fields };
       return { ...prev, infoCards: cards };
@@ -294,6 +302,7 @@ export default function App() {
   const addInfoField = (cardIdx) => {
     setEditData(prev => {
       const cards = [...(prev.infoCards || [])];
+      if (!cards[cardIdx]) cards[cardIdx] = {};
       const fields = [...(cards[cardIdx].fields || []), { label: "新項目", value: "詳細內容" }];
       cards[cardIdx] = { ...cards[cardIdx], fields: fields };
       return { ...prev, infoCards: cards };
@@ -303,6 +312,7 @@ export default function App() {
   const removeInfoField = (cardIdx, fieldIdx) => {
     setEditData(prev => {
       const cards = [...(prev.infoCards || [])];
+      if (!cards[cardIdx]) return prev;
       const fields = [...(cards[cardIdx].fields || [])];
       fields.splice(fieldIdx, 1);
       cards[cardIdx] = { ...cards[cardIdx], fields: fields };
@@ -363,20 +373,20 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] text-gray-500 block mb-0.5">品牌名稱</label>
-                    <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.brandName} onChange={(e) => setEditData({...editData, brandName: e.target.value})} />
+                    <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.brandName || ""} onChange={(e) => setEditData({...editData, brandName: e.target.value})} />
                   </div>
                   <div>
                     <label className="text-[10px] text-gray-500 block mb-0.5">展會日期</label>
-                    <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventDate} onChange={(e) => setEditData({...editData, eventDate: e.target.value})} />
+                    <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventDate || ""} onChange={(e) => setEditData({...editData, eventDate: e.target.value})} />
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-500 block mb-0.5">活動大標題</label>
-                  <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.eventTitle} onChange={(e) => setEditData({...editData, eventTitle: e.target.value})} />
+                  <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.eventTitle || ""} onChange={(e) => setEditData({...editData, eventTitle: e.target.value})} />
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-500 block mb-0.5">展覽地點</label>
-                  <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventLocation} onChange={(e) => setEditData({...editData, eventLocation: e.target.value})} />
+                  <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventLocation || ""} onChange={(e) => setEditData({...editData, eventLocation: e.target.value})} />
                 </div>
               </div>
             )}
@@ -405,7 +415,7 @@ export default function App() {
             </p>
 
             <div className="sticky top-14 z-50 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1">
-              {Object.keys(displayData.itinerary).map((dayNumStr) => {
+              {Object.keys(displayData.itinerary || {}).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
                 const dayInfo = displayData.itinerary[dayNum];
                 return (
@@ -471,8 +481,8 @@ export default function App() {
                     <div className="w-14 shrink-0 text-right pr-2.5 pt-3">
                       {isAdmin ? (
                         <div className="space-y-1">
-                          <input className="w-full text-right text-xs font-black text-[#0F172A] border border-gray-300 rounded px-1 bg-white" value={ev.time} onChange={(e) => handleEventChange(selectedDay, idx, 'time', e.target.value)} placeholder="09:00" />
-                          <input className="w-full text-right text-[9px] text-gray-500 border border-gray-300 rounded px-1 bg-white" value={ev.endTime} onChange={(e) => handleEventChange(selectedDay, idx, 'endTime', e.target.value)} placeholder="結束" />
+                          <input className="w-full text-right text-xs font-black text-[#0F172A] border border-gray-300 rounded px-1 bg-white" value={ev.time || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'time', e.target.value)} placeholder="09:00" />
+                          <input className="w-full text-right text-[9px] text-gray-500 border border-gray-300 rounded px-1 bg-white" value={ev.endTime || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'endTime', e.target.value)} placeholder="結束" />
                         </div>
                       ) : (
                         <>
@@ -507,7 +517,7 @@ export default function App() {
                       <div className="flex items-start">
                         <div className="bg-[#F1F5F9] text-[#1E293B] p-2 rounded mr-2.5 shrink-0">
                           {isAdmin ? (
-                            <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
+                            <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon || "pin"} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
                               <option value="pin">📍 地標</option>
                               <option value="plane">✈️ 班機</option>
                               <option value="coffee">☕ 餐飲</option>
@@ -521,9 +531,9 @@ export default function App() {
                         <div className="flex-1 w-full mr-3">
                           {isAdmin ? (
                             <div className="space-y-1.5 w-full pt-8">
-                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
-                              <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
-                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
+                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
+                              <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
+                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
                               
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
@@ -534,13 +544,13 @@ export default function App() {
                                     <div key={attIdx} className="flex items-center gap-1">
                                       <input 
                                         className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
-                                        value={att.name || ""} 
+                                        value={att?.name || ""} 
                                         onChange={(e) => handleAttachmentChange(selectedDay, idx, attIdx, 'name', e.target.value)} 
                                         placeholder="預覽名稱 (如手冊)" 
                                       />
                                       <input 
                                         className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
-                                        value={att.url || ""} 
+                                        value={att?.url || ""} 
                                         onChange={(e) => handleAttachmentChange(selectedDay, idx, attIdx, 'url', e.target.value)} 
                                         placeholder="網址" 
                                       />
@@ -565,10 +575,10 @@ export default function App() {
                         </div>
                       </div>
                       
-                      {!isAdmin && (ev.mapUrl || (ev.attachments && ev.attachments.some(a => a.url))) && (
+                      {!isAdmin && (ev.mapUrl || (ev.attachments && ev.attachments.some(a => a?.url))) && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
                           {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
-                          {ev.attachments && ev.attachments.map((att, i) => att.url ? (
+                          {ev.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <a key={i} href={att.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
                               <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> {att.name || `附件 ${i + 1}`}
                             </a>
@@ -608,9 +618,9 @@ export default function App() {
             {isAdmin && (
               <div className="bg-[#F8FAFC] border border-[#CBD5E1] p-3 rounded mb-4 space-y-2">
                 <div className="text-xs font-bold text-[#334155] mb-2">🔧 管理員：編輯裝備項目</div>
-                {displayData.checklist.map((item, idx) => (
+                {(displayData.checklist || []).map((item, idx) => (
                   <div key={item.id || idx} className="flex items-center gap-2">
-                    <input className="flex-1 text-xs border border-gray-300 rounded p-1.5 bg-white" value={item.label} onChange={(e) => handleChecklistChange(idx, e.target.value)} />
+                    <input className="flex-1 text-xs border border-gray-300 rounded p-1.5 bg-white" value={item.label || ""} onChange={(e) => handleChecklistChange(idx, e.target.value)} />
                     <button onClick={() => removeChecklistItem(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100"><Trash2 size={14} /></button>
                   </div>
                 ))}
@@ -621,7 +631,7 @@ export default function App() {
             )}
 
             <div className="bg-white rounded shadow-sm border border-[#CBD5E1] overflow-hidden">
-               {displayData.checklist.map((item) => (
+               {(displayData.checklist || []).map((item) => (
                  <div key={item.id} onClick={() => toggleCheck(item.id)} className="flex items-center p-3.5 border-b border-[#F1F5F9] last:border-b-0 cursor-pointer hover:bg-[#F8FAFC]">
                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-colors ${userChecklist[item.id] ? 'border-[#1E293B] bg-[#1E293B]' : 'border-[#CBD5E1]'}`}>
                      {userChecklist[item.id] && <CheckSquare size={13} className="text-white" />}
@@ -656,8 +666,8 @@ export default function App() {
                   <div key={card.id || cIdx} className="bg-white border border-gray-300 p-3 rounded-lg space-y-2.5 shadow-sm">
                     <div className="flex items-center justify-between gap-2 border-b pb-2">
                       <div className="flex-1 grid grid-cols-2 gap-2">
-                        <input className="border rounded p-1 text-[11px] font-bold" value={card.title} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題 (如 專車司機)" />
-                        <input className="border rounded p-1 text-[11px]" value={card.subtitle} onChange={(e) => handleInfoCardChange(cIdx, 'subtitle', e.target.value)} placeholder="副標題 (如 Transport)" />
+                        <input className="border rounded p-1 text-[11px] font-bold" value={card?.title || ""} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題" />
+                        <input className="border rounded p-1 text-[11px]" value={card?.subtitle || ""} onChange={(e) => handleInfoCardChange(cIdx, 'subtitle', e.target.value)} placeholder="副標題" />
                       </div>
                       <button onClick={() => removeInfoCard(cIdx)} className="text-red-600 p-1.5 bg-red-50 hover:bg-red-100 rounded">
                         <Trash2 size={14} />
@@ -665,16 +675,15 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <input className="border rounded p-1 text-[11px] font-bold" value={card.name} onChange={(e) => handleInfoCardChange(cIdx, 'name', e.target.value)} placeholder="主要名稱 (如 佐藤先生)" />
+                      <input className="border rounded p-1 text-[11px] font-bold" value={card?.name || ""} onChange={(e) => handleInfoCardChange(cIdx, 'name', e.target.value)} placeholder="主要名稱" />
                     </div>
 
-                    {/* 卡片內的子欄位 */}
                     <div className="space-y-1.5 pt-1">
                       <div className="text-[10px] font-bold text-gray-500">詳細明細欄位：</div>
                       {(card.fields || []).map((field, fIdx) => (
                         <div key={fIdx} className="flex items-center gap-1.5">
-                          <input className="w-1/3 border rounded p-1 text-[10px] font-bold" value={field.label} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'label', e.target.value)} placeholder="項目名" />
-                          <input className="flex-1 border rounded p-1 text-[10px]" value={field.value} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'value', e.target.value)} placeholder="內容" />
+                          <input className="w-1/3 border rounded p-1 text-[10px] font-bold" value={field?.label || ""} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'label', e.target.value)} placeholder="項目名" />
+                          <input className="flex-1 border rounded p-1 text-[10px]" value={field?.value || ""} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'value', e.target.value)} placeholder="內容" />
                           <button onClick={() => removeInfoField(cIdx, fIdx)} className="text-red-600 p-1 bg-red-50 rounded">
                             <Trash2 size={12} />
                           </button>
@@ -689,22 +698,21 @@ export default function App() {
               </div>
             )}
 
-            {/* 讀取模式：動態渲染所有資訊卡片 */}
             <div className="space-y-4">
               {(displayData.infoCards || []).map((card, cIdx) => (
                 <div key={card.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
                   <div className="p-4 flex items-center border-b border-[#2D3748]">
                     <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
                     <div>
-                      <div className="text-[9px] opacity-70 tracking-widest uppercase">{card.subtitle || card.title}</div>
-                      <div className="text-base font-bold">{card.name}</div>
+                      <div className="text-[9px] opacity-70 tracking-widest uppercase">{card?.subtitle || card?.title}</div>
+                      <div className="text-base font-bold">{card?.name}</div>
                     </div>
                   </div>
                   <div className="p-4 space-y-3 bg-[#111827] text-xs">
-                    {(card.fields || []).map((f, fIdx) => (
+                    {(card?.fields || []).map((f, fIdx) => (
                       <div key={fIdx}>
-                        <div className="text-[9px] opacity-60 uppercase">{f.label}</div>
-                        <div className="font-bold tracking-wider mt-0.5">{f.value}</div>
+                        <div className="text-[9px] opacity-60 uppercase">{f?.label}</div>
+                        <div className="font-bold tracking-wider mt-0.5">{f?.value}</div>
                       </div>
                     ))}
                   </div>
@@ -726,7 +734,7 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
-      <div className="bg-white text-center py-3.5 border-b border-[#CBD5E1] shadow-sm sticky top-0 z-20 flex justify-center items-center px-4">
+      <div className="bg-white text-center py-3.5 border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 flex justify-center items-center px-4">
         <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
           <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData.brandName}
         </div>
@@ -736,7 +744,7 @@ export default function App() {
       {renderContent()}
 
       {isAdmin && (
-        <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-30 pointer-events-none animate-in fade-in duration-200">
+        <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-40 pointer-events-none animate-in fade-in duration-200">
           <button 
             onClick={handleSaveToCloud}
             className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-center font-mono text-sm pointer-events-auto border-2 border-white/20 active:scale-95 transition-all"
@@ -746,8 +754,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 底部導覽列 (已將「通訊」改名為「資訊」，並使用 Info 圖示) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
           { id: 'itinerary', icon: Calendar, label: '行程' },
           { id: 'checklist', icon: CheckSquare, label: '裝備' },
