@@ -27,7 +27,7 @@ const defaultData = {
   activeEvent: null,
   itinerary: {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
-      { time: "9:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", reportUrls: [""] }
+      { time: "9:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", attachments: [{ name: "展覽手冊", url: "" }] }
     ]},
     2: { date: "9/30", weekday: "週三", title: "PCB / CCL專家", events: [] },
     3: { date: "10/1", weekday: "週四", title: "展覽參訪", events: [] },
@@ -121,13 +121,14 @@ export default function App() {
     });
   };
 
-  const handleReportUrlChange = (day, eventIndex, urlIndex, value) => {
+  // 附件列表增刪改 (支援預覽名稱與網址)
+  const handleAttachmentChange = (day, eventIndex, attIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
       const currentEv = updatedEvents[eventIndex] || {};
-      const urls = [...(currentEv.reportUrls || [""])];
-      urls[urlIndex] = value;
-      updatedEvents[eventIndex] = { ...currentEv, reportUrls: urls };
+      const atts = [...(currentEv.attachments || [{ name: "", url: "" }])];
+      atts[attIndex] = { ...atts[attIndex], [field]: value };
+      updatedEvents[eventIndex] = { ...currentEv, attachments: atts };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -135,13 +136,13 @@ export default function App() {
     });
   };
 
-  const addReportUrl = (day, eventIndex) => {
+  const addAttachment = (day, eventIndex) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
       const currentEv = updatedEvents[eventIndex] || {};
-      const urls = [...(currentEv.reportUrls || [""])];
-      urls.push("");
-      updatedEvents[eventIndex] = { ...currentEv, reportUrls: urls };
+      const atts = [...(currentEv.attachments || [{ name: "", url: "" }])];
+      atts.push({ name: "", url: "" });
+      updatedEvents[eventIndex] = { ...currentEv, attachments: atts };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -149,13 +150,13 @@ export default function App() {
     });
   };
 
-  const removeReportUrl = (day, eventIndex, urlIndex) => {
+  const removeAttachment = (day, eventIndex, attIndex) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
       const currentEv = updatedEvents[eventIndex] || {};
-      const urls = [...(currentEv.reportUrls || [""])];
-      urls.splice(urlIndex, 1);
-      updatedEvents[eventIndex] = { ...currentEv, reportUrls: urls.length > 0 ? urls : [""] };
+      const atts = [...(currentEv.attachments || [{ name: "", url: "" }])];
+      atts.splice(attIndex, 1);
+      updatedEvents[eventIndex] = { ...currentEv, attachments: atts.length > 0 ? atts : [{ name: "", url: "" }] };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -166,7 +167,7 @@ export default function App() {
   const addEvent = (day) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
-      updatedEvents.push({ time: "12:00", endTime: "", icon: "pin", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", reportUrls: [""] });
+      updatedEvents.push({ time: "12:00", endTime: "", icon: "pin", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", attachments: [{ name: "", url: "" }] });
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -350,23 +351,23 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            {/* 凍結式精巧日期切換列 (改為不透明實心背景，徹底解決線條透過去的問題) */}
-            <div className="sticky top-14 z-10 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-md gap-1">
+            {/* 凍結式精巧日期切換列 (加上高層級 z-20 與實心不透明背景，徹底解決藍圈透過去的問題) */}
+            <div className="sticky top-14 z-25 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-md gap-1">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
                 const dayInfo = displayData.itinerary[dayNum];
                 return (
                   <div key={dayNum} className="relative group shrink-0">
-                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white border border-gray-200'}`}>
+                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono focus:outline-none focus:ring-0 ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white border border-gray-200'}`}>
                       <span className="text-[8px] opacity-80">D-{dayNum}</span>
                       {isAdmin ? (
                         <div className="space-y-0.5 text-center">
-                          <input className="w-9 text-center text-[10px] font-black bg-white border rounded text-[#1E293B]" value={dayInfo.date} onChange={(e) => {
+                          <input className="w-9 text-center text-[10px] font-black bg-white border rounded text-[#1E293B] focus:outline-none" value={dayInfo.date} onChange={(e) => {
                             const newItin = {...editData.itinerary};
                             newItin[dayNum].date = e.target.value;
                             setEditData({...editData, itinerary: newItin});
                           }} />
-                          <input className="w-9 text-center text-[8px] bg-white border rounded text-gray-500" value={dayInfo.weekday} onChange={(e) => {
+                          <input className="w-9 text-center text-[8px] bg-white border rounded text-gray-500 focus:outline-none" value={dayInfo.weekday} onChange={(e) => {
                             const newItin = {...editData.itinerary};
                             newItin[dayNum].weekday = e.target.value;
                             setEditData({...editData, itinerary: newItin});
@@ -457,7 +458,7 @@ export default function App() {
                             <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
                               <option value="pin">📍 地標</option>
                               <option value="plane">✈️ 班機</option>
-                              <option value="coffee">☕️️ 餐飲</option>
+                              <option value="coffee">☕ 餐飲</option>
                               <option value="store">🏢 展館</option>
                               <option value="hotel">🏨 飯店</option>
                               <option value="activity">📅 活動</option>
@@ -475,23 +476,30 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
+                                {/* 附件列表 (含預覽名稱與網址) */}
                                 <div className="space-y-1 pt-1">
-                                  <div className="text-[10px] font-bold text-[#2563EB]">報告網址列表：</div>
-                                  {(ev.reportUrls || []).map((url, uIdx) => (
-                                    <div key={uIdx} className="flex items-center gap-1">
+                                  <div className="text-[10px] font-bold text-[#2563EB]">附件列表：</div>
+                                  {(ev.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
+                                    <div key={attIdx} className="flex items-center gap-1">
+                                      <input 
+                                        className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
+                                        value={att.name || ""} 
+                                        onChange={(e) => handleAttachmentChange(selectedDay, idx, attIdx, 'name', e.target.value)} 
+                                        placeholder="預覽名稱 (如手冊)" 
+                                      />
                                       <input 
                                         className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
-                                        value={url} 
-                                        onChange={(e) => handleReportUrlChange(selectedDay, idx, uIdx, e.target.value)} 
-                                        placeholder={`報告網址 ${uIdx + 1}`} 
+                                        value={att.url || ""} 
+                                        onChange={(e) => handleAttachmentChange(selectedDay, idx, attIdx, 'url', e.target.value)} 
+                                        placeholder="網址" 
                                       />
-                                      <button onClick={() => removeReportUrl(selectedDay, idx, uIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
+                                      <button onClick={() => removeAttachment(selectedDay, idx, attIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
                                         <Trash2 size={12} />
                                       </button>
                                     </div>
                                   ))}
-                                  <button onClick={() => addReportUrl(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
-                                    + 新增報告網址
+                                  <button onClick={() => addAttachment(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
+                                    + 新增附件
                                   </button>
                                 </div>
                               </div>
@@ -506,12 +514,13 @@ export default function App() {
                         </div>
                       </div>
                       
-                      {!isAdmin && (ev.mapUrl || (ev.reportUrls && ev.reportUrls.some(u => u))) && (
+                      {/* 讀取模式按鈕 (支援自訂預覽名稱) */}
+                      {!isAdmin && (ev.mapUrl || (ev.attachments && ev.attachments.some(a => a.url))) && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
                           {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
-                          {ev.reportUrls && ev.reportUrls.map((u, i) => u ? (
-                            <a key={i} href={u} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
-                              <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> 報告連結 {i + 1}
+                          {ev.attachments && ev.attachments.map((att, i) => att.url ? (
+                            <a key={i} href={att.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
+                              <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> {att.name || `附件 ${i + 1}`}
                             </a>
                           ) : null)}
                         </div>
@@ -655,7 +664,6 @@ export default function App() {
       
       {renderContent()}
 
-      {/* --- 管理員專用：懸浮固定在畫面下方的儲存按鈕 --- */}
       {isAdmin && (
         <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-30 pointer-events-none animate-in fade-in duration-200">
           <button 
@@ -667,7 +675,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 底部導覽列 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
           { id: 'itinerary', icon: Calendar, label: '行程' },
