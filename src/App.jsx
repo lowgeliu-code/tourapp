@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Home, Calendar, CheckSquare, User, MapPin, 
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp
+  Plane, Coffee, Store, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -20,22 +20,20 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const defaultData = {
-  brandName: "INSTITUTIONAL SECURITIES // CORP",
-  eventTitle: "Highly-functional\nMaterial Week 2026",
-  eventLocation: "幕張メッセ (Makuhari Messe)",
-  eventDate: "2026.09.29 — 10.03",
-  announcement: "外資研究部提醒：9:50請務必配戴識別證於 Hall 1 集合。",
-  nextTime: "09:45",
-  nextLocation: "桃園機場第一航廈",
-  nextDetail: "T2華航 團體報到櫃檯",
+  brandName: "Lowge securities",
+  eventTitle: "12月Semicon JP",
+  eventLocation: "東京",
+  eventDate: "2026.12.1 — 12.03",
+  announcement: "小提醒～9:50記得帶著展覽票在Hall 2集合喔！",
+  activeEvent: null, // 記錄目前被勾選為「現在行程」的物件 { dayIndex, eventIndex }
   itinerary: {
-    1: { date: "9/29", weekday: "週二", title: "抵達日本・營運據點部署", events: [
-      { time: "09:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照與通行證", mapUrl: "https://maps.google.com", attachmentUrl: "" }
+    1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
+      { time: "9:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", attachmentUrl: "" },
+      { time: "12:15", endTime: "16:35", icon: "plane", title: "CI104 台北 → 成田", subtitle: "TPE → NRT", note: "抵達後搭乘中巴前往飯店", mapUrl: "", attachmentUrl: "" }
     ]},
-    2: { date: "9/30", weekday: "週三", title: "PCB / CCL 專項技術參訪", events: [] },
-    3: { date: "10/1", weekday: "週四", title: "核心展區深度交流", events: [] },
-    4: { date: "10/2", weekday: "週五", title: "商務洽談與會場考察", events: [] },
-    5: { date: "10/3", weekday: "週六", title: "賦歸・行程結束", events: [] }
+    2: { date: "9/30", weekday: "週三", title: "PCB / CCL專家", events: [] },
+    3: { date: "10/1", weekday: "週四", title: "展覽參訪", events: [] },
+    4: { date: "10/2", weekday: "週五", title: "展覽參訪", events: [] }
   },
   checklist: [
     { id: '1', label: '護照 / 證件' },
@@ -48,11 +46,10 @@ const defaultData = {
     { id: '8', label: '展覽入場 QR Code' }
   ],
   contact: {
-    name: "Mike Chiang",
-    title: "Senior Technology Analyst",
+    name: "Lowgeliu",
+    title: "sales",
     fields: [
-      { label: "LINE ID", value: "mike_line_0907" },
-      { label: "電話號碼", value: "+886 912-345-678" }
+      { label: "LINE ID", value: "mike_chiang_0907" }
     ]
   }
 };
@@ -142,12 +139,26 @@ export default function App() {
       setEditData(prev => {
         const updatedEvents = [...prev.itinerary[day].events];
         updatedEvents.splice(index, 1);
+        // 如果剛好刪除的是現在行程，清空 activeEvent
+        let newActive = prev.activeEvent;
+        if (newActive && newActive.day === day && newActive.index === index) {
+          newActive = null;
+        }
         return {
           ...prev,
+          activeEvent: newActive,
           itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
         };
       });
     }
+  };
+
+  // 設為現在行程
+  const setActiveEvent = (dayNum, eventIndex) => {
+    setEditData(prev => ({
+      ...prev,
+      activeEvent: prev.activeEvent && prev.activeEvent.day === dayNum && prev.activeEvent.index === eventIndex ? null : { day: dayNum, index: eventIndex }
+    }));
   };
 
   const addDay = () => {
@@ -201,7 +212,6 @@ export default function App() {
     });
   };
 
-  // 聯絡人自訂欄位編輯函式
   const handleContactFieldChange = (index, field, value) => {
     setEditData(prev => {
       const newFields = [...(prev.contact.fields || [])];
@@ -240,6 +250,34 @@ export default function App() {
   const displayData = isAdmin ? editData : appData;
   const currentDay = displayData.itinerary[selectedDay] || displayData.itinerary[1];
 
+  // 自動計算「現在行程」與「下一個行程 (NEXT)」
+  let currentEventObj = null;
+  let nextEventObj = null;
+
+  if (displayData.activeEvent) {
+    const { day, index } = displayData.activeEvent;
+    if (displayData.itinerary[day] && displayData.itinerary[day].events[index]) {
+      currentEventObj = displayData.itinerary[day].events[index];
+      // 尋找下一個行程（同一天的下一個，若沒有則找後一天的第一個）
+      if (displayData.itinerary[day].events[index + 1]) {
+        nextEventObj = displayData.itinerary[day].events[index + 1];
+      } else {
+        const nextDayNum = Number(day) + 1;
+        if (displayData.itinerary[nextDayNum] && displayData.itinerary[nextDayNum].events.length > 0) {
+          nextEventObj = displayData.itinerary[nextDayNum].events[0];
+        }
+      }
+    }
+  }
+
+  // 如果沒有設定「現在行程」，則預設把 Day 1的第一個行程當作 Next，第二個當作再下一個
+  if (!currentEventObj) {
+    const firstDayEvents = displayData.itinerary[1]?.events || [];
+    if (firstDayEvents.length > 0) {
+      nextEventObj = firstDayEvents[0];
+    }
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -273,11 +311,6 @@ export default function App() {
                   <div className="bg-white p-4 rounded border border-[#CBD5E1] space-y-3">
                     <div className="text-xs font-bold text-[#334155] border-b border-[#F1F5F9] pb-2 mb-2 font-mono">⚡ 研究部即時廣播</div>
                     <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">公告內容</label><textarea className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC]" rows="2" value={editData.announcement} onChange={(e) => setEditData({...editData, announcement: e.target.value})} /></div>
-                    <div className="flex gap-2">
-                      <div className="w-1/3"><label className="text-[10px] font-bold text-gray-500 mb-1 block">時間</label><input className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC] font-mono" value={editData.nextTime} onChange={(e) => setEditData({...editData, nextTime: e.target.value})} /></div>
-                      <div className="w-2/3"><label className="text-[10px] font-bold text-gray-500 mb-1 block">次要行程目標</label><input className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC] font-mono" value={editData.nextLocation} onChange={(e) => setEditData({...editData, nextLocation: e.target.value})} /></div>
-                    </div>
-                    <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">備註說明</label><input className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC] text-gray-500" value={editData.nextDetail} onChange={(e) => setEditData({...editData, nextDetail: e.target.value})} /></div>
                   </div>
                   <button onClick={handleSaveToCloud} className="w-full bg-[#1E293B] text-white font-bold py-3 rounded text-xs tracking-wider font-mono hover:bg-[#0F172A] transition-colors shadow flex items-center justify-center">
                     <Save size={16} className="mr-2" /> 部署並同步至全體終端
@@ -297,19 +330,34 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
+                  {/* 現在行程卡片 */}
                   <div className="bg-[#1E293B] text-white p-4 rounded shadow-sm border-l-2 border-[#3B82F6]">
-                    <div className="text-[10px] font-mono opacity-80 mb-1">STATUS // 狀態</div>
-                    <div className="text-base font-bold mb-1 font-mono">行前準備中</div>
-                    <div className="text-xs opacity-70">數據連線正常</div>
+                    <div className="text-[10px] font-mono opacity-80 mb-1">現在行程</div>
+                    {currentEventObj ? (
+                      <>
+                        <div className="text-lg font-bold mb-1 font-mono">{currentEventObj.time}</div>
+                        <div className="text-xs font-bold truncate">{currentEventObj.title}</div>
+                        {currentEventObj.subtitle && <div className="text-[10px] opacity-70 truncate mt-0.5">{currentEventObj.subtitle}</div>}
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-base font-bold mb-1 font-mono">行前準備中</div>
+                        <div className="text-xs opacity-70">尚未指定現在行程</div>
+                      </>
+                    )}
                   </div>
+
+                  {/* NEXT // 下一站卡片 (動態連動) */}
                   <div className="bg-white border border-[#CBD5E1] p-4 rounded shadow-sm">
                     <div className="text-[10px] font-mono text-[#64748B] mb-1">NEXT // 下一站</div>
-                    <div className="text-xl font-black text-[#0F172A] mb-1 font-mono">{appData.nextTime}</div>
-                    <div className="text-xs font-bold text-[#334155] truncate">{appData.nextLocation}</div>
-                    {appData.nextDetail && (
-                      <div className="text-[10px] text-gray-500 mt-2 flex items-center truncate">
-                        <MapPin size={10} className="mr-1 shrink-0 text-[#2563EB]" /> {appData.nextDetail}
-                      </div>
+                    {nextEventObj ? (
+                      <>
+                        <div className="text-xl font-black text-[#0F172A] mb-1 font-mono">{nextEventObj.time}</div>
+                        <div className="text-xs font-bold text-[#334155] truncate">{nextEventObj.title}</div>
+                        {nextEventObj.subtitle && <div className="text-[10px] text-gray-500 mt-2 flex items-center truncate"><MapPin size={10} className="mr-1 shrink-0 text-[#2563EB]" /> {nextEventObj.subtitle}</div>}
+                      </>
+                    ) : (
+                      <div className="text-xs text-gray-400 mt-2 font-mono">目前無後續行程</div>
                     )}
                   </div>
                 </div>
@@ -343,7 +391,9 @@ export default function App() {
               )}
             </div>
             
-            <p className="text-[11px] text-gray-500 mb-4 font-mono">點擊下方日期檢視當日詳細參訪與會議安排。</p>
+            <p className="text-[11px] text-gray-500 mb-4 font-mono">
+              {isAdmin ? "🔧 管理員模式：您可以編輯、增刪議程，並點擊星號設定「現在行程」。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
+            </p>
 
             <div className="bg-[#F1F5F9] rounded p-1.5 flex items-center mb-5 overflow-x-auto shadow-inner gap-1 border border-[#CBD5E1]">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
@@ -404,75 +454,90 @@ export default function App() {
             </div>
 
             <div className="relative">
-              {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => (
-                <div key={idx} className="flex mb-5 relative group font-mono">
-                  {idx !== currentDay.events.length - 1 && <div className="absolute left-[66px] top-6 bottom-[-24px] w-[2px] bg-[#CBD5E1] z-0"></div>}
-                  
-                  <div className="w-14 shrink-0 text-right pr-2.5 pt-3">
-                    {isAdmin ? (
-                      <div className="space-y-1">
-                        <input className="w-full text-right text-xs font-black text-[#0F172A] border border-gray-300 rounded px-1 bg-white" value={ev.time} onChange={(e) => handleEventChange(selectedDay, idx, 'time', e.target.value)} placeholder="09:00" />
-                        <input className="w-full text-right text-[9px] text-gray-500 border border-gray-300 rounded px-1 bg-white" value={ev.endTime} onChange={(e) => handleEventChange(selectedDay, idx, 'endTime', e.target.value)} placeholder="結束" />
-                      </div>
-                    ) : (
-                      <>
-                        <div className="text-xs font-black text-[#0F172A]">{ev.time}</div>
-                        {ev.endTime && <div className="text-[9px] text-gray-500">— {ev.endTime}</div>}
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="w-4 flex justify-center pt-3.5 relative z-10 shrink-0">
-                    <div className="w-2.5 h-2.5 rounded-full border-2 border-[#2563EB] bg-white"></div>
-                  </div>
-                  
-                  <div className={`flex-1 ml-2.5 bg-white border ${isAdmin ? 'border-[#2563EB]' : 'border-[#CBD5E1]'} rounded p-3.5 shadow-sm relative`}>
-                    {isAdmin && (
-                      <button onClick={() => removeEvent(selectedDay, idx)} className="absolute top-2 right-2 text-red-600 hover:text-red-800 p-1 bg-red-50 rounded">
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-
-                    <div className="flex items-start">
-                      <div className="bg-[#F1F5F9] text-[#1E293B] p-2 rounded mr-2.5 shrink-0">
-                        {isAdmin ? (
-                          <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
-                            <option value="pin">📍 地標</option><option value="plane">✈️ 班機</option>
-                            <option value="coffee">☕️ 餐飲</option><option value="store">🏢 展館</option>
-                          </select>
-                        ) : getEventIcon(ev.icon)}
-                      </div>
-                      
-                      <div className="flex-1 w-full mr-3">
-                        {isAdmin ? (
-                          <div className="space-y-1.5 w-full">
-                            <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
-                            <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
-                            <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
-                            <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1">
-                              <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
-                              <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.attachmentUrl} onChange={(e) => handleEventChange(selectedDay, idx, 'attachmentUrl', e.target.value)} placeholder="附件網址" />
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="font-bold text-[#0F172A] text-xs">{ev.title}</div>
-                            {ev.subtitle && <div className="text-[11px] text-gray-600 mt-0.5">{ev.subtitle}</div>}
-                            {ev.note && <div className="text-[10px] text-[#2563EB] mt-1 font-sans">{ev.note}</div>}
-                          </>
-                        )}
-                      </div>
+              {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => {
+                const isActive = displayData.activeEvent && displayData.activeEvent.day === selectedDay && displayData.activeEvent.index === idx;
+                return (
+                  <div key={idx} className="flex mb-5 relative group font-mono">
+                    {idx !== currentDay.events.length - 1 && <div className="absolute left-[66px] top-6 bottom-[-24px] w-[2px] bg-[#CBD5E1] z-0"></div>}
+                    
+                    <div className="w-14 shrink-0 text-right pr-2.5 pt-3">
+                      {isAdmin ? (
+                        <div className="space-y-1">
+                          <input className="w-full text-right text-xs font-black text-[#0F172A] border border-gray-300 rounded px-1 bg-white" value={ev.time} onChange={(e) => handleEventChange(selectedDay, idx, 'time', e.target.value)} placeholder="09:00" />
+                          <input className="w-full text-right text-[9px] text-gray-500 border border-gray-300 rounded px-1 bg-white" value={ev.endTime} onChange={(e) => handleEventChange(selectedDay, idx, 'endTime', e.target.value)} placeholder="結束" />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-xs font-black text-[#0F172A]">{ev.time}</div>
+                          {ev.endTime && <div className="text-[9px] text-gray-500">— {ev.endTime}</div>}
+                        </>
+                      )}
                     </div>
                     
-                    {!isAdmin && (ev.mapUrl || ev.attachmentUrl) && (
-                      <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
-                        {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
-                        {ev.attachmentUrl && <a href={ev.attachmentUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><LinkIcon size={11} className="mr-1 text-[#2563EB]" /> 相關附件</a>}
+                    <div className="w-4 flex justify-center pt-3.5 relative z-10 shrink-0">
+                      <div className={`w-2.5 h-2.5 rounded-full border-2 ${isActive ? 'bg-amber-500 border-amber-600' : 'border-[#2563EB] bg-white'}`}></div>
+                    </div>
+                    
+                    <div className={`flex-1 ml-2.5 bg-white border ${isActive ? 'border-2 border-amber-500 shadow-md' : isAdmin ? 'border-[#2563EB]' : 'border-[#CBD5E1]'} rounded p-3.5 shadow-sm relative`}>
+                      {isAdmin && (
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                          <button 
+                            onClick={() => setActiveEvent(selectedDay, idx)} 
+                            title="設為現在行程"
+                            className={`p-1 rounded text-xs flex items-center gap-1 font-bold ${isActive ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-amber-100'}`}
+                          >
+                            <Star size={13} fill={isActive ? "white" : "none"} /> {isActive ? "現正進行" : "設為現在"}
+                          </button>
+                          <button onClick={() => removeEvent(selectedDay, idx)} className="text-red-600 hover:text-red-800 p-1 bg-red-50 rounded">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-start">
+                        <div className="bg-[#F1F5F9] text-[#1E293B] p-2 rounded mr-2.5 shrink-0">
+                          {isAdmin ? (
+                            <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
+                              <option value="pin">📍 地標</option><option value="plane">✈️ 班機</option>
+                              <option value="coffee">☕️ 餐飲</option><option value="store">🏢 展館</option>
+                            </select>
+                          ) : getEventIcon(ev.icon)}
+                        </div>
+                        
+                        <div className="flex-1 w-full mr-3">
+                          {isAdmin ? (
+                            <div className="space-y-1.5 w-full pt-6">
+                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
+                              <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
+                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
+                              <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1">
+                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
+                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.attachmentUrl} onChange={(e) => handleEventChange(selectedDay, idx, 'attachmentUrl', e.target.value)} placeholder="附件網址" />
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <div className="font-bold text-[#0F172A] text-xs">{ev.title}</div>
+                                {isActive && <span className="bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold font-mono">現在行程</span>}
+                              </div>
+                              {ev.subtitle && <div className="text-[11px] text-gray-600 mt-0.5">{ev.subtitle}</div>}
+                              {ev.note && <div className="text-[10px] text-[#2563EB] mt-1 font-sans">{ev.note}</div>}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    )}
+                      
+                      {!isAdmin && (ev.mapUrl || ev.attachmentUrl) && (
+                        <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
+                          {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
+                          {ev.attachmentUrl && <a href={ev.attachmentUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><LinkIcon size={11} className="mr-1 text-[#2563EB]" /> 相關附件</a>}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )) : (
+                );
+              }) : (
                 <div className="text-center py-8 text-gray-400 font-mono text-xs">尚無建立排程</div>
               )}
               
