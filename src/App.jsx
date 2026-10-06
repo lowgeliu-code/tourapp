@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Calendar, CheckSquare, User, MapPin, 
+  Calendar, CheckSquare, Info, MapPin, 
   Bell, ExternalLink, Settings, Edit3, Save,
   Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown
 } from 'lucide-react';
@@ -43,13 +43,29 @@ const defaultData = {
     { id: '7', label: '商務名片 (充足)' },
     { id: '8', label: '展覽入場 QR Code' }
   ],
-  contact: {
-    name: "Lowgeliu",
-    title: "sales",
-    fields: [
-      { label: "LINE ID", value: "mike_line_0907" }
-    ]
-  }
+  // 升級為多卡片資訊結構 (包含聯絡人與其他自訂資訊卡片)
+  infoCards: [
+    {
+      id: 'contact_main',
+      title: "主要聯絡窗口",
+      subtitle: "Sales",
+      name: "Peter Liu",
+      fields: [
+        { label: "LINE ID", value: "lowgeliu" },
+        { label: "電話號碼", value: "+886 976034854" }
+      ]
+    },
+    {
+      id: 'driver_info',
+      title: "專車司機資訊",
+      subtitle: "Transportation",
+      name: "佐藤 先生 (Sato)",
+      fields: [
+        { label: "車牌號碼", value: "東京 500 あ 12-34" },
+        { label: "司機電話", value: "+81 90-1234-5678" }
+      ]
+    }
+  ]
 };
 
 export default function App() {
@@ -256,30 +272,68 @@ export default function App() {
     });
   };
 
-  const handleContactFieldChange = (index, field, value) => {
+  // 資訊卡片管理函式
+  const handleInfoCardChange = (cardIdx, field, value) => {
     setEditData(prev => {
-      const newFields = [...(prev.contact.fields || [])];
-      newFields[index] = { ...newFields[index], [field]: value };
-      return { ...prev, contact: { ...prev.contact, fields: newFields } };
+      const cards = [...(prev.infoCards || [])];
+      cards[cardIdx] = { ...cards[cardIdx], [field]: value };
+      return { ...prev, infoCards: cards };
     });
   };
 
-  const addContactField = () => {
+  const handleInfoFieldChange = (cardIdx, fieldIdx, subField, value) => {
+    setEditData(prev => {
+      const cards = [...(prev.infoCards || [])];
+      const fields = [...(cards[cardIdx].fields || [])];
+      fields[fieldIdx] = { ...fields[fieldIdx], [subField]: value };
+      cards[cardIdx] = { ...cards[cardIdx], fields: fields };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const addInfoField = (cardIdx) => {
+    setEditData(prev => {
+      const cards = [...(prev.infoCards || [])];
+      const fields = [...(cards[cardIdx].fields || []), { label: "新項目", value: "詳細內容" }];
+      cards[cardIdx] = { ...cards[cardIdx], fields: fields };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const removeInfoField = (cardIdx, fieldIdx) => {
+    setEditData(prev => {
+      const cards = [...(prev.infoCards || [])];
+      const fields = [...(cards[cardIdx].fields || [])];
+      fields.splice(fieldIdx, 1);
+      cards[cardIdx] = { ...cards[cardIdx], fields: fields };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const addInfoCard = () => {
     setEditData(prev => ({
       ...prev,
-      contact: { 
-        ...prev.contact, 
-        fields: [...(prev.contact.fields || []), { label: "聯絡項目", value: "詳細資訊" }] 
-      }
+      infoCards: [
+        ...(prev.infoCards || []),
+        {
+          id: Date.now().toString(),
+          title: "新增資訊卡片",
+          subtitle: "Category",
+          name: "標題名稱",
+          fields: [{ label: "詳細項目", value: "內容說明" }]
+        }
+      ]
     }));
   };
 
-  const removeContactField = (index) => {
-    setEditData(prev => {
-      const newFields = [...prev.contact.fields];
-      newFields.splice(index, 1);
-      return { ...prev, contact: { ...prev.contact, fields: newFields } };
-    });
+  const removeInfoCard = (cardIdx) => {
+    if (window.confirm("確定要刪除這張資訊卡片嗎？")) {
+      setEditData(prev => {
+        const cards = [...(prev.infoCards || [])];
+        cards.splice(cardIdx, 1);
+        return { ...prev, infoCards: cards };
+      });
+    }
   };
 
   const getEventIcon = (type) => {
@@ -350,7 +404,6 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            {/* 凍結式日期切換列：設定高層級 z-50 與完全不透明的實心背景，確保行程捲上來時會被遮擋在下方 */}
             <div className="sticky top-14 z-50 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
@@ -413,7 +466,6 @@ export default function App() {
               {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => {
                 return (
                   <div key={idx} className="flex mb-5 relative group font-mono">
-                    {/* 將時間軸線條的 z-index 設低 (z-0)，確保絕對不會蓋過日期列 */}
                     {idx !== currentDay.events.length - 1 && <div className="absolute left-[66px] top-6 bottom-[-24px] w-[2px] bg-[#CBD5E1] z-0"></div>}
                     
                     <div className="w-14 shrink-0 text-right pr-2.5 pt-3">
@@ -583,60 +635,81 @@ export default function App() {
 
       case 'contact':
         return (
-          <div className="p-4 space-y-4 animate-in fade-in duration-300 flex flex-col h-[75vh] font-mono pb-20">
+          <div className="p-4 space-y-6 animate-in fade-in duration-300 font-mono pb-20">
             <div className="flex justify-between items-center mb-1">
               <div>
-                <div className="text-[10px] text-[#2563EB] font-bold tracking-widest mb-1">COMMUNICATION</div>
-                <h2 className="text-xl font-black text-[#0F172A]">通訊與聯絡窗口</h2>
+                <div className="text-[10px] text-[#2563EB] font-bold tracking-widest mb-1">INFORMATION & CONTACT</div>
+                <h2 className="text-xl font-black text-[#0F172A]">資訊與聯絡窗口</h2>
               </div>
             </div>
 
             {isAdmin && (
-              <div className="bg-[#F8FAFC] border border-[#CBD5E1] p-3 rounded space-y-3 text-xs">
-                <div className="font-bold text-[#334155] mb-1">🔧 管理員：自訂聯絡窗口與欄位</div>
-                <div>
-                  <label className="text-[10px] text-gray-500 block mb-0.5">負責人姓名</label>
-                  <input className="w-full border rounded p-1.5 bg-white text-xs font-bold" value={editData.contact.name} onChange={(e) => setEditData({...editData, contact: {...editData.contact, name: e.target.value}})} />
-                </div>
-                <div>
-                  <label className="text-[10px] text-gray-500 block mb-0.5">職稱 / 團隊</label>
-                  <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData.contact.title} onChange={(e) => setEditData({...editData, contact: {...editData.contact, title: e.target.value}})} />
-                </div>
-
-                <div className="border-t border-gray-200 pt-2 mt-2">
-                  <label className="text-[10px] text-blue-600 block mb-2">自訂通訊欄位</label>
-                  <div className="space-y-2">
-                    {(editData.contact.fields || []).map((field, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5">
-                        <input className="w-1/3 border rounded p-1 bg-white text-[11px] font-bold text-gray-700" value={field.label} onChange={(e) => handleContactFieldChange(idx, 'label', e.target.value)} placeholder="欄位名" />
-                        <input className="flex-1 border rounded p-1 bg-white text-[11px]" value={field.value} onChange={(e) => handleContactFieldChange(idx, 'value', e.target.value)} placeholder="內容" />
-                        <button onClick={() => removeContactField(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100"><Trash2 size={14} /></button>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={addContactField} className="flex items-center text-xs font-bold text-[#2563EB] bg-blue-50 px-3 py-1.5 rounded border border-blue-200 border-dashed mt-2">
-                    <PlusCircle size={14} className="mr-1" /> 新增聯絡欄位
+              <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded-xl shadow-sm space-y-4 text-xs">
+                <div className="font-bold text-[#1E293B] flex items-center justify-between border-b pb-2">
+                  <span>🔧 管理員：管理資訊卡片 (如司機、伴手禮等)</span>
+                  <button onClick={addInfoCard} className="bg-blue-600 text-white font-bold px-2.5 py-1 rounded text-[11px] flex items-center shadow">
+                    <PlusCircle size={13} className="mr-1" /> 新增資訊卡片
                   </button>
                 </div>
-              </div>
-            )}
 
-            <div className="bg-[#1A2332] text-white rounded shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
-              <div className="p-4 flex items-center border-b border-[#2D3748]">
-                <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
-                <div>
-                  <div className="text-[9px] opacity-70 tracking-widest">{displayData.contact.title}</div>
-                  <div className="text-base font-bold">{displayData.contact.name}</div>
-                </div>
-              </div>
-              <div className="p-4 space-y-3 bg-[#111827] text-xs">
-                {displayData.contact.fields && displayData.contact.fields.map((f, i) => (
-                  <div key={i}>
-                    <div className="text-[9px] opacity-60 uppercase">{f.label}</div>
-                    <div className="font-bold tracking-wider mt-0.5">{f.value}</div>
+                {(displayData.infoCards || []).map((card, cIdx) => (
+                  <div key={card.id || cIdx} className="bg-white border border-gray-300 p-3 rounded-lg space-y-2.5 shadow-sm">
+                    <div className="flex items-center justify-between gap-2 border-b pb-2">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <input className="border rounded p-1 text-[11px] font-bold" value={card.title} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題 (如 專車司機)" />
+                        <input className="border rounded p-1 text-[11px]" value={card.subtitle} onChange={(e) => handleInfoCardChange(cIdx, 'subtitle', e.target.value)} placeholder="副標題 (如 Transport)" />
+                      </div>
+                      <button onClick={() => removeInfoCard(cIdx)} className="text-red-600 p-1.5 bg-red-50 hover:bg-red-100 rounded">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <input className="border rounded p-1 text-[11px] font-bold" value={card.name} onChange={(e) => handleInfoCardChange(cIdx, 'name', e.target.value)} placeholder="主要名稱 (如 佐藤先生)" />
+                    </div>
+
+                    {/* 卡片內的子欄位 */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="text-[10px] font-bold text-gray-500">詳細明細欄位：</div>
+                      {(card.fields || []).map((field, fIdx) => (
+                        <div key={fIdx} className="flex items-center gap-1.5">
+                          <input className="w-1/3 border rounded p-1 text-[10px] font-bold" value={field.label} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'label', e.target.value)} placeholder="項目名" />
+                          <input className="flex-1 border rounded p-1 text-[10px]" value={field.value} onChange={(e) => handleInfoFieldChange(cIdx, fIdx, 'value', e.target.value)} placeholder="內容" />
+                          <button onClick={() => removeInfoField(cIdx, fIdx)} className="text-red-600 p-1 bg-red-50 rounded">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => addInfoField(cIdx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-1 rounded border border-blue-200 border-dashed mt-1">
+                        + 新增明細項目
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* 讀取模式：動態渲染所有資訊卡片 */}
+            <div className="space-y-4">
+              {(displayData.infoCards || []).map((card, cIdx) => (
+                <div key={card.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
+                  <div className="p-4 flex items-center border-b border-[#2D3748]">
+                    <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
+                    <div>
+                      <div className="text-[9px] opacity-70 tracking-widest uppercase">{card.subtitle || card.title}</div>
+                      <div className="text-base font-bold">{card.name}</div>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3 bg-[#111827] text-xs">
+                    {(card.fields || []).map((f, fIdx) => (
+                      <div key={fIdx}>
+                        <div className="text-[9px] opacity-60 uppercase">{f.label}</div>
+                        <div className="font-bold tracking-wider mt-0.5">{f.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="mt-auto pt-6 pb-4 text-center">
@@ -673,11 +746,12 @@ export default function App() {
         </div>
       )}
 
+      {/* 底部導覽列 (已將「通訊」改名為「資訊」，並使用 Info 圖示) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
           { id: 'itinerary', icon: Calendar, label: '行程' },
           { id: 'checklist', icon: CheckSquare, label: '裝備' },
-          { id: 'contact', icon: User, label: '通訊' }
+          { id: 'contact', icon: Info, label: '資訊' }
         ].map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-1.5 w-20 transition-colors font-mono ${activeTab === tab.id ? 'text-[#2563EB]' : 'text-gray-400 hover:text-gray-600'}`}>
             <tab.icon size={20} className="mb-0.5" />
