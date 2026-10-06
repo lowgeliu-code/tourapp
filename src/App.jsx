@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -53,7 +53,7 @@ const defaultData = {
     {
       id: 'contact_main',
       title: "主要聯絡窗口",
-      subtitle: "Sales",
+      iconType: "user",
       name: "Peter Liu",
       items: [
         { label: "LINE ID", value: "lowgeliu" },
@@ -62,13 +62,22 @@ const defaultData = {
     },
     {
       id: 'driver_info',
-      title: "專車司機與推薦",
-      subtitle: "Transportation",
+      title: "專車司機資訊",
+      iconType: "car",
       name: "佐藤 先生 (Sato)",
       items: [
         { label: "司機電話", value: "+81 90-1234-5678" },
-        { label: "車牌號碼", value: "東京 500 あ 12-34" },
-        { label: "推薦伴手禮", value: "東京車站限定 NY起司餅乾" }
+        { label: "車牌號碼", value: "東京 500 あ 12-34" }
+      ]
+    },
+    {
+      id: 'gift_info',
+      title: "推薦伴手禮",
+      iconType: "gift",
+      name: "人氣採買清單",
+      items: [
+        { label: "首選推薦", value: "東京車站限定 NY起司餅乾" },
+        { label: "機場免稅", value: "白色戀人、薯條三兄弟" }
       ]
     }
   ]
@@ -81,8 +90,7 @@ export default function App() {
   const [appData, setAppData] = useState(defaultData);
   const [editData, setEditData] = useState(defaultData);
 
-  // 彈跳視窗 Modal 狀態
-  const [modalContent, setModalContent] = useState(null); // { title: "重點摘要", text: "..." }
+  const [modalContent, setModalContent] = useState(null);
 
   useEffect(() => {
     const docRef = doc(db, 'tourConfig', 'mainContent');
@@ -296,6 +304,7 @@ export default function App() {
     });
   };
 
+  // 資訊卡片管理函式
   const handleInfoCardChange = (cardIdx, field, value) => {
     setEditData(prev => {
       const cards = [...(prev?.infoCards || [])];
@@ -346,7 +355,7 @@ export default function App() {
         {
           id: Date.now().toString(),
           title: "新增資訊卡片",
-          subtitle: "Category",
+          iconType: "info",
           name: "標題名稱",
           items: [{ label: "項目名稱", value: "內容說明" }]
         }
@@ -372,6 +381,16 @@ export default function App() {
       case 'hotel': return <Hotel size={16} />;
       case 'plane': return <Plane size={16} />;
       default: return <MapPin size={16} />;
+    }
+  };
+
+  const getInfoCardIcon = (type) => {
+    switch(type) {
+      case 'user': return <User size={20} />;
+      case 'car': return <Hotel size={20} />;
+      case 'gift': return <Gift size={20} />;
+      case 'phone': return <PhoneCall size={20} />;
+      default: return <Info size={20} />;
     }
   };
 
@@ -555,7 +574,6 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev?.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
-                                {/* 附件列表 */}
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">附件列表：</div>
                                   {(ev?.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
@@ -582,7 +600,6 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* 研究重點與 QA 勾選設定 */}
                                 <div className="pt-2 border-t border-gray-200 space-y-2">
                                   <label className="flex items-center text-xs font-bold text-[#2563EB] cursor-pointer">
                                     <input 
@@ -632,7 +649,6 @@ export default function App() {
                         </div>
                       </div>
                       
-                      {/* 讀取模式：底部按鈕 (Google Maps、附件、研究重點、預計 QA) */}
                       {!isAdmin && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans items-center">
                           {ev?.mapUrl && (
@@ -646,7 +662,6 @@ export default function App() {
                             </a>
                           ) : null)}
 
-                          {/* 醒目的研究重點按鈕 */}
                           {ev?.showResearch && ev?.researchPoint && (
                             <button 
                               onClick={() => setModalContent({ title: "📌 研究重點摘要", text: ev.researchPoint })}
@@ -656,7 +671,6 @@ export default function App() {
                             </button>
                           )}
 
-                          {/* 醒目的預計 QA 按鈕 */}
                           {ev?.showResearch && ev?.researchQA && (
                             <button 
                               onClick={() => setModalContent({ title: "❓ 預計 QA 討論", text: ev.researchQA })}
@@ -738,7 +752,7 @@ export default function App() {
             {isAdmin && (
               <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded-xl shadow-sm space-y-4 text-xs">
                 <div className="font-bold text-[#1E293B] flex items-center justify-between border-b pb-2">
-                  <span>🔧 管理員：管理資訊卡片 (左側標題、右側內容)</span>
+                  <span>🔧 管理員：管理資訊卡片 (自訂圖示與明細)</span>
                   <button onClick={addInfoCard} className="bg-blue-600 text-white font-bold px-2.5 py-1 rounded text-[11px] flex items-center shadow">
                     <PlusCircle size={13} className="mr-1" /> 新增資訊卡片
                   </button>
@@ -748,8 +762,13 @@ export default function App() {
                   <div key={card?.id || cIdx} className="bg-white border border-gray-300 p-3 rounded-lg space-y-2.5 shadow-sm">
                     <div className="flex items-center justify-between gap-2 border-b pb-2">
                       <div className="flex-1 grid grid-cols-2 gap-2">
-                        <input className="border rounded p-1 text-[11px] font-bold" value={card?.title || ""} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題" />
-                        <input className="border rounded p-1 text-[11px]" value={card?.subtitle || ""} onChange={(e) => handleInfoCardChange(cIdx, 'subtitle', e.target.value)} placeholder="副標題" />
+                        <input className="border rounded p-1 text-[11px] font-bold" value={card?.title || ""} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題 (如 主要聯絡窗口)" />
+                        <select className="border rounded p-1 text-[10px] bg-white" value={card?.iconType || "info"} onChange={(e) => handleInfoCardChange(cIdx, 'iconType', e.target.value)}>
+                          <option value="user">👤 聯絡人</option>
+                          <option value="car">🚗 司機/交通</option>
+                          <option value="gift">🎁 伴手禮/禮品</option>
+                          <option value="info">📌 其他資訊</option>
+                        </select>
                       </div>
                       <button onClick={() => removeInfoCard(cIdx)} className="text-red-600 p-1.5 bg-red-50 hover:bg-red-100 rounded">
                         <Trash2 size={14} />
@@ -757,7 +776,7 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1">
-                      <input className="border rounded p-1 text-[11px] font-bold" value={card?.name || ""} onChange={(e) => handleInfoCardChange(cIdx, 'name', e.target.value)} placeholder="主要名稱" />
+                      <input className="border rounded p-1 text-[11px] font-bold" value={card?.name || ""} onChange={(e) => handleInfoCardChange(cIdx, 'name', e.target.value)} placeholder="主要名稱 (如 Peter Liu)" />
                     </div>
 
                     <div className="space-y-1.5 pt-1">
@@ -768,13 +787,13 @@ export default function App() {
                             className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-1 bg-white font-bold text-gray-700" 
                             value={item?.label || ""} 
                             onChange={(e) => handleInfoItemChange(cIdx, itemIdx, 'label', e.target.value)} 
-                            placeholder="標題" 
+                            placeholder="標題 (如 LINE ID)" 
                           />
                           <input 
                             className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-1 bg-white" 
                             value={item?.value || ""} 
                             onChange={(e) => handleInfoItemChange(cIdx, itemIdx, 'value', e.target.value)} 
-                            placeholder="內容" 
+                            placeholder="內容 (如 lowgeliu)" 
                           />
                           <button onClick={() => removeInfoItem(cIdx, itemIdx)} className="text-red-600 p-1 bg-red-50 rounded">
                             <Trash2 size={12} />
@@ -790,14 +809,17 @@ export default function App() {
               </div>
             )}
 
+            {/* 讀取模式：精美渲染所有資訊卡片 (無冗員頭像，只保留乾淨大標題與所選圖示) */}
             <div className="space-y-4">
               {(displayData?.infoCards || []).map((card, cIdx) => (
                 <div key={card?.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
                   <div className="p-4 flex items-center border-b border-[#2D3748]">
-                    <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
+                    <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3">
+                      {getInfoCardIcon(card?.iconType)}
+                    </div>
                     <div>
-                      <div className="text-[9px] opacity-70 tracking-widest uppercase">{card?.subtitle || card?.title}</div>
-                      <div className="text-base font-bold">{card?.name}</div>
+                      <div className="text-base font-bold">{card?.title}</div>
+                      {card?.name && <div className="text-xs opacity-80 mt-0.5">{card?.name}</div>}
                     </div>
                   </div>
                   <div className="p-4 space-y-3 bg-[#111827] text-xs">
@@ -846,7 +868,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 彈跳視窗 Modal (用於顯示研究重點與預計 QA) */}
       {modalContent && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 space-y-4 font-mono relative">
