@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Calendar, CheckSquare, Info, MapPin, 
+  Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
   Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown
 } from 'lucide-react';
@@ -517,7 +517,7 @@ export default function App() {
               {isAdmin && (
                 <div className="ml-[72px] mt-2 font-mono">
                   <button onClick={() => addEvent(selectedDay)} className="flex items-center text-xs font-bold text-[#1E293B] bg-[#F1F5F9] px-3.5 py-2 rounded border border-[#2563EB] border-dashed hover:bg-[#E2E8F0]">
-                    <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 新增活動
+                    <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 新進活動
                   </button>
                 </div>
               )}
@@ -620,7 +620,6 @@ export default function App() {
               </div>
             )}
 
-            {/* 讀取模式：精美乾淨的資訊卡片 */}
             <div className="space-y-4">
               <div className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
                 <div className="p-4 flex items-center border-b border-[#2D3748]">
@@ -642,7 +641,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 司機與伴手禮/推薦資訊卡片 */}
               <div className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
                 <div className="p-4 flex items-center border-b border-[#2D3748]">
                   <div className="bg-[#3B82F6] text-white rounded p-2.5 mr-3"><Hotel size={20} /></div>
