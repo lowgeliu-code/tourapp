@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, Calendar, CheckSquare, User, MapPin, 
-  Bell, ExternalLink, Settings, Edit3, Save,
+  Calendar, CheckSquare, User, MapPin, 
+  ExternalLink, Edit3, Save,
   Plane, Coffee, Store, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
@@ -24,7 +24,6 @@ const defaultData = {
   eventTitle: "12月Semicon JP",
   eventLocation: "東京",
   eventDate: "2026.12.1 — 12.03",
-  announcement: "小提醒～9:50記得帶著展覽票在Hall 2集合喔！",
   activeEvent: null,
   itinerary: {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
@@ -55,7 +54,7 @@ const defaultData = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('itinerary'); // 預設進入行程分頁
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
   const [appData, setAppData] = useState(defaultData);
@@ -154,7 +153,6 @@ export default function App() {
     }
   };
 
-  // 調整行程順序 (往上或往下)
   const moveEvent = (day, index, direction) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
@@ -162,12 +160,10 @@ export default function App() {
 
       if (targetIndex < 0 || targetIndex >= updatedEvents.length) return prev;
 
-      // 交換位置
       const temp = updatedEvents[index];
       updatedEvents[index] = updatedEvents[targetIndex];
       updatedEvents[targetIndex] = temp;
 
-      // 追蹤並更新「現在行程」的指標
       let newActive = prev.activeEvent;
       if (newActive && newActive.day === day) {
         if (newActive.index === index) {
@@ -281,127 +277,48 @@ export default function App() {
   const displayData = isAdmin ? editData : appData;
   const currentDay = displayData.itinerary[selectedDay] || displayData.itinerary[1];
 
-  let currentEventObj = null;
-  let nextEventObj = null;
-
-  if (displayData.activeEvent) {
-    const { day, index } = displayData.activeEvent;
-    if (displayData.itinerary[day] && displayData.itinerary[day].events[index]) {
-      currentEventObj = displayData.itinerary[day].events[index];
-      if (displayData.itinerary[day].events[index + 1]) {
-        nextEventObj = displayData.itinerary[day].events[index + 1];
-      } else {
-        const nextDayNum = Number(day) + 1;
-        if (displayData.itinerary[nextDayNum] && displayData.itinerary[nextDayNum].events.length > 0) {
-          nextEventObj = displayData.itinerary[nextDayNum].events[0];
-        }
-      }
-    }
-  }
-
-  if (!currentEventObj) {
-    const firstDayEvents = displayData.itinerary[1]?.events || [];
-    if (firstDayEvents.length > 0) {
-      nextEventObj = firstDayEvents[0];
-    }
-  }
-
   const renderContent = () => {
     switch (activeTab) {
-      case 'home':
-        return (
-          <div className="p-4 space-y-4 animate-in fade-in duration-300">
-            <div className="bg-[#1A2332] text-[#E2E8F0] p-6 rounded shadow-md border-l-4 border-[#3B82F6] relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="text-[10px] tracking-widest text-[#60A5FA] font-mono mb-1">EQUITY RESEARCH // 2026</div>
-                <h2 className="text-2xl font-black tracking-tight whitespace-pre-line font-mono">{appData.eventTitle}</h2>
-                <div className="flex items-center text-xs opacity-80 mt-4 font-mono">
-                  <MapPin size={14} className="mr-1 text-[#60A5FA] min-w-[14px]" />
-                  <span>{appData.eventLocation}</span>
-                </div>
-                <div className="text-xs opacity-70 mt-1 font-mono">{appData.eventDate}</div>
-              </div>
-            </div>
-            
-            {isAdmin ? (
-              <div className="bg-[#F8FAFC] border border-[#CBD5E1] p-5 rounded shadow-sm">
-                <div className="flex items-center text-[#1E293B] font-bold mb-4 text-sm font-mono">
-                  <Edit3 size={18} className="mr-2 text-[#2563EB]" /> 終端管理員控制台 (首頁)
-                </div>
-                <div className="space-y-4">
-                  <div className="bg-white p-4 rounded border border-[#CBD5E1] space-y-3">
-                    <div className="text-xs font-bold text-[#334155] border-b border-[#F1F5F9] pb-2 mb-2 font-mono">📌 核心參數設定</div>
-                    <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">機構代號 / 品牌</label><input className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC] font-mono" value={editData.brandName} onChange={(e) => setEditData({...editData, brandName: e.target.value})} /></div>
-                    <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">活動大標題</label><textarea className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC] font-mono font-bold" rows="2" value={editData.eventTitle} onChange={(e) => setEditData({...editData, eventTitle: e.target.value})} /></div>
-                    <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">地點</label><input className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC]" value={editData.eventLocation} onChange={(e) => setEditData({...editData, eventLocation: e.target.value})} /></div>
-                    <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">日期</label><input className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC]" value={editData.eventDate} onChange={(e) => setEditData({...editData, eventDate: e.target.value})} /></div>
-                  </div>
-                  <div className="bg-white p-4 rounded border border-[#CBD5E1] space-y-3">
-                    <div className="text-xs font-bold text-[#334155] border-b border-[#F1F5F9] pb-2 mb-2 font-mono">⚡ 研究部即時廣播</div>
-                    <div><label className="text-[10px] font-bold text-gray-500 mb-1 block">公告內容</label><textarea className="w-full p-2 border border-gray-300 rounded text-xs bg-[#F8FAFC]" rows="2" value={editData.announcement} onChange={(e) => setEditData({...editData, announcement: e.target.value})} /></div>
-                  </div>
-                  <button onClick={handleSaveToCloud} className="w-full bg-[#1E293B] text-white font-bold py-3 rounded text-xs tracking-wider font-mono hover:bg-[#0F172A] transition-colors shadow flex items-center justify-center">
-                    <Save size={16} className="mr-2" /> 部署並同步至全體終端
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="bg-[#EFF6FF] border border-[#BFDBFE] p-4 rounded flex items-start shadow-sm">
-                  <div className="bg-[#DBEAFE] p-2 rounded mr-3 shrink-0 text-[#1E40AF]">
-                    <Bell size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-[#1E40AF] font-bold font-mono uppercase tracking-wider mb-0.5">RESEARCH FLASH // 研究快訊</div>
-                    <div className="text-xs text-[#1E293B] font-medium leading-relaxed whitespace-pre-line">{appData.announcement}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#1E293B] text-white p-4 rounded shadow-sm border-l-2 border-[#3B82F6]">
-                    <div className="text-[10px] font-mono opacity-80 mb-1">現在行程</div>
-                    {currentEventObj ? (
-                      <>
-                        <div className="text-lg font-bold mb-1 font-mono">{currentEventObj.time}</div>
-                        <div className="text-xs font-bold truncate">{currentEventObj.title}</div>
-                        {currentEventObj.subtitle && <div className="text-[10px] opacity-70 truncate mt-0.5">{currentEventObj.subtitle}</div>}
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-base font-bold mb-1 font-mono">行前準備中</div>
-                        <div className="text-xs opacity-70">尚未指定現在行程</div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="bg-white border border-[#CBD5E1] p-4 rounded shadow-sm">
-                    <div className="text-[10px] font-mono text-[#64748B] mb-1">NEXT // 下一站</div>
-                    {nextEventObj ? (
-                      <>
-                        <div className="text-xl font-black text-[#0F172A] mb-1 font-mono">{nextEventObj.time}</div>
-                        <div className="text-xs font-bold text-[#334155] truncate">{nextEventObj.title}</div>
-                        {nextEventObj.subtitle && <div className="text-[10px] text-gray-500 mt-2 flex items-center truncate"><MapPin size={10} className="mr-1 shrink-0 text-[#2563EB]" /> {nextEventObj.subtitle}</div>}
-                      </>
-                    ) : (
-                      <div className="text-xs text-gray-400 mt-2 font-mono">目前無後續行程</div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        );
-
       case 'itinerary':
         return (
           <div className="p-4 animate-in fade-in duration-300">
-            <div className="bg-[#EFF6FF] border border-[#BFDBFE] p-3 rounded flex items-center shadow-sm mb-4">
-              <div className="bg-[#DBEAFE] p-1.5 rounded mr-3 shrink-0 text-[#1E40AF]">
-                <Bell size={16} />
+            {/* 管理員專用：大會基本資訊設定面板 */}
+            {isAdmin && (
+              <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded mb-6 shadow-sm space-y-3 font-mono">
+                <div className="text-xs font-bold text-[#1E293B] border-b border-gray-200 pb-2 flex items-center">
+                  <Edit3 size={16} className="mr-1.5 text-[#2563EB]" /> 🔧 管理員：展會基本資訊設定
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-0.5">品牌名稱</label>
+                    <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.brandName} onChange={(e) => setEditData({...editData, brandName: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-0.5">展會日期</label>
+                    <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventDate} onChange={(e) => setEditData({...editData, eventDate: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-0.5">活動大標題</label>
+                  <input className="w-full text-xs border rounded p-1 bg-white font-bold" value={editData.eventTitle} onChange={(e) => setEditData({...editData, eventTitle: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-0.5">展覽地點</label>
+                  <input className="w-full text-xs border rounded p-1 bg-white" value={editData.eventLocation} onChange={(e) => setEditData({...editData, eventLocation: e.target.value})} />
+                </div>
               </div>
-              <div className="truncate">
-                <div className="text-[9px] text-[#1E40AF] font-bold font-mono">FLASH</div>
-                <div className="text-xs text-[#1E293B] truncate">{displayData.announcement}</div>
+            )}
+
+            {/* 頂部外資專業展會資訊卡片 */}
+            <div className="bg-[#1A2332] text-[#E2E8F0] p-5 rounded shadow-md border-l-4 border-[#3B82F6] mb-6 relative overflow-hidden font-mono">
+              <div className="relative z-10">
+                <div className="text-[10px] tracking-widest text-[#60A5FA] mb-1">EQUITY RESEARCH // 2026</div>
+                <h2 className="text-xl font-black tracking-tight">{displayData.eventTitle}</h2>
+                <div className="flex items-center text-xs opacity-80 mt-3">
+                  <MapPin size={13} className="mr-1 text-[#60A5FA] shrink-0" />
+                  <span>{displayData.eventLocation}</span>
+                </div>
+                <div className="text-xs opacity-70 mt-0.5">{displayData.eventDate}</div>
               </div>
             </div>
 
@@ -412,13 +329,13 @@ export default function App() {
               </div>
               {isAdmin && (
                 <button onClick={handleSaveToCloud} className="bg-[#2563EB] text-white font-bold text-[11px] px-3 py-1.5 rounded font-mono shadow-sm hover:bg-[#1D4ED8] flex items-center">
-                  <Save size={13} className="mr-1" /> 儲存議程
+                  <Save size={13} className="mr-1" /> 儲存變更
                 </button>
               )}
             </div>
             
             <p className="text-[11px] text-gray-500 mb-4 font-mono">
-              {isAdmin ? "🔧 管理員模式：可使用上下箭頭調整順序、點擊星號設定「現在行程」。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
+              {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
             <div className="bg-[#F1F5F9] rounded p-1.5 flex items-center mb-5 overflow-x-auto shadow-inner gap-1 border border-[#CBD5E1]">
@@ -481,7 +398,6 @@ export default function App() {
 
             <div className="relative">
               {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => {
-                const isActive = displayData.activeEvent && displayData.activeEvent.day === selectedDay && displayData.activeEvent.index === idx;
                 return (
                   <div key={idx} className="flex mb-5 relative group font-mono">
                     {idx !== currentDay.events.length - 1 && <div className="absolute left-[66px] top-6 bottom-[-24px] w-[2px] bg-[#CBD5E1] z-0"></div>}
@@ -501,39 +417,21 @@ export default function App() {
                     </div>
                     
                     <div className="w-4 flex justify-center pt-3.5 relative z-10 shrink-0">
-                      <div className={`w-2.5 h-2.5 rounded-full border-2 ${isActive ? 'bg-amber-500 border-amber-600' : 'border-[#2563EB] bg-white'}`}></div>
+                      <div className="w-2.5 h-2.5 rounded-full border-2 border-[#2563EB] bg-white"></div>
                     </div>
                     
-                    <div className={`flex-1 ml-2.5 bg-white border ${isActive ? 'border-2 border-amber-500 shadow-md' : isAdmin ? 'border-[#2563EB]' : 'border-[#CBD5E1]'} rounded p-3.5 shadow-sm relative`}>
+                    <div className={`flex-1 ml-2.5 bg-white border ${isAdmin ? 'border-[#2563EB]' : 'border-[#CBD5E1]'} rounded p-3.5 shadow-sm relative`}>
                       {isAdmin && (
                         <div className="absolute top-2 right-2 flex items-center gap-1">
-                          {/* 排序按鈕 (往上 / 往下) */}
                           <div className="flex bg-gray-100 rounded border border-gray-300 overflow-hidden">
-                            <button 
-                              onClick={() => moveEvent(selectedDay, idx, 'up')} 
-                              disabled={idx === 0}
-                              title="往上移"
-                              className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30 border-r border-gray-300"
-                            >
+                            <button onClick={() => moveEvent(selectedDay, idx, 'up')} disabled={idx === 0} title="往上移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30 border-r border-gray-300">
                               <ArrowUp size={13} />
                             </button>
-                            <button 
-                              onClick={() => moveEvent(selectedDay, idx, 'down')} 
-                              disabled={idx === currentDay.events.length - 1}
-                              title="往下移"
-                              className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30"
-                            >
+                            <button onClick={() => moveEvent(selectedDay, idx, 'down')} disabled={idx === currentDay.events.length - 1} title="往下移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30">
                               <ArrowDown size={13} />
                             </button>
                           </div>
 
-                          <button 
-                            onClick={() => setActiveEvent(selectedDay, idx)} 
-                            title="設為現在行程"
-                            className={`p-1 rounded text-xs flex items-center gap-1 font-bold ${isActive ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-amber-100'}`}
-                          >
-                            <Star size={13} fill={isActive ? "white" : "none"} /> {isActive ? "現正進行" : "設為現在"}
-                          </button>
                           <button onClick={() => removeEvent(selectedDay, idx)} className="text-red-600 hover:text-red-800 p-1 bg-red-50 rounded">
                             <Trash2 size={13} />
                           </button>
@@ -563,10 +461,7 @@ export default function App() {
                             </div>
                           ) : (
                             <>
-                              <div className="flex items-center gap-2">
-                                <div className="font-bold text-[#0F172A] text-xs">{ev.title}</div>
-                                {isActive && <span className="bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold font-mono">現在行程</span>}
-                              </div>
+                              <div className="font-bold text-[#0F172A] text-xs">{ev.title}</div>
                               {ev.subtitle && <div className="text-[11px] text-gray-600 mt-0.5">{ev.subtitle}</div>}
                               {ev.note && <div className="text-[10px] text-[#2563EB] mt-1 font-sans">{ev.note}</div>}
                             </>
@@ -620,14 +515,8 @@ export default function App() {
                 <div className="text-xs font-bold text-[#334155] mb-2">🔧 管理員：編輯裝備項目</div>
                 {displayData.checklist.map((item, idx) => (
                   <div key={item.id || idx} className="flex items-center gap-2">
-                    <input 
-                      className="flex-1 text-xs border border-gray-300 rounded p-1.5 bg-white" 
-                      value={item.label} 
-                      onChange={(e) => handleChecklistChange(idx, e.target.value)} 
-                    />
-                    <button onClick={() => removeChecklistItem(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100">
-                      <Trash2 size={14} />
-                    </button>
+                    <input className="flex-1 text-xs border border-gray-300 rounded p-1.5 bg-white" value={item.label} onChange={(e) => handleChecklistChange(idx, e.target.value)} />
+                    <button onClick={() => removeChecklistItem(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100"><Trash2 size={14} /></button>
                   </div>
                 ))}
                 <button onClick={addChecklistItem} className="flex items-center text-xs font-bold text-[#2563EB] bg-blue-50 px-3 py-1.5 rounded border border-blue-200 border-dashed mt-2">
@@ -677,25 +566,13 @@ export default function App() {
                 </div>
 
                 <div className="border-t border-gray-200 pt-2 mt-2">
-                  <label className="text-[10px] font-bold text-blue-600 block mb-2">自訂通訊欄位 (可隨意改為 LINE ID、電話等)</label>
+                  <label className="text-[10px] font-bold text-blue-600 block mb-2">自訂通訊欄位</label>
                   <div className="space-y-2">
                     {(editData.contact.fields || []).map((field, idx) => (
                       <div key={idx} className="flex items-center gap-1.5">
-                        <input 
-                          className="w-1/3 border rounded p-1 bg-white text-[11px] font-bold text-gray-700" 
-                          value={field.label} 
-                          onChange={(e) => handleContactFieldChange(idx, 'label', e.target.value)} 
-                          placeholder="欄位名(如LINE ID)" 
-                        />
-                        <input 
-                          className="flex-1 border rounded p-1 bg-white text-[11px]" 
-                          value={field.value} 
-                          onChange={(e) => handleContactFieldChange(idx, 'value', e.target.value)} 
-                          placeholder="內容" 
-                        />
-                        <button onClick={() => removeContactField(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100">
-                          <Trash2 size={14} />
-                        </button>
+                        <input className="w-1/3 border rounded p-1 bg-white text-[11px] font-bold text-gray-700" value={field.label} onChange={(e) => handleContactFieldChange(idx, 'label', e.target.value)} placeholder="欄位名" />
+                        <input className="flex-1 border rounded p-1 bg-white text-[11px]" value={field.value} onChange={(e) => handleContactFieldChange(idx, 'value', e.target.value)} placeholder="內容" />
+                        <button onClick={() => removeContactField(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100"><Trash2 size={14} /></button>
                       </div>
                     ))}
                   </div>
@@ -747,14 +624,14 @@ export default function App() {
       
       {renderContent()}
 
+      {/* 底部導覽列 (已移除首頁，保留行程、裝備、通訊) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
-          { id: 'home', icon: Home, label: '首頁' },
           { id: 'itinerary', icon: Calendar, label: '行程' },
           { id: 'checklist', icon: CheckSquare, label: '裝備' },
           { id: 'contact', icon: User, label: '通訊' }
         ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-1.5 w-16 transition-colors font-mono ${activeTab === tab.id ? 'text-[#2563EB]' : 'text-gray-400 hover:text-gray-600'}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-1.5 w-20 transition-colors font-mono ${activeTab === tab.id ? 'text-[#2563EB]' : 'text-gray-400 hover:text-gray-600'}`}>
             <tab.icon size={20} className="mb-0.5" />
             <span className="text-[10px] font-bold">{tab.label}</span>
           </button>
