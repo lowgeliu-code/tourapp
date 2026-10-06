@@ -121,13 +121,14 @@ export default function App() {
     });
   };
 
-  // 報告網址增刪改
+  // 安全防呆的報告網址增刪改函式
   const handleReportUrlChange = (day, eventIndex, urlIndex, value) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
-      const urls = [...(updatedEvents[eventIndex].reportUrls || [""])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const urls = [...(currentEv.reportUrls || [""])];
       urls[urlIndex] = value;
-      updatedEvents[eventIndex] = { ...updatedEvents[eventIndex], reportUrls: urls };
+      updatedEvents[eventIndex] = { ...currentEv, reportUrls: urls };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -138,9 +139,10 @@ export default function App() {
   const addReportUrl = (day, eventIndex) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
-      const urls = [...(updatedEvents[eventIndex].reportUrls || [""])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const urls = [...(currentEv.reportUrls || [""])];
       urls.push("");
-      updatedEvents[eventIndex] = { ...updatedEvents[index], reportUrls: urls };
+      updatedEvents[eventIndex] = { ...currentEv, reportUrls: urls };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -151,9 +153,10 @@ export default function App() {
   const removeReportUrl = (day, eventIndex, urlIndex) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
-      const urls = [...(updatedEvents[eventIndex].reportUrls || [""])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const urls = [...(currentEv.reportUrls || [""])];
       urls.splice(urlIndex, 1);
-      updatedEvents[eventIndex] = { ...updatedEvents[eventIndex], reportUrls: urls };
+      updatedEvents[eventIndex] = { ...currentEv, reportUrls: urls.length > 0 ? urls : [""] };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -203,28 +206,11 @@ export default function App() {
       updatedEvents[index] = updatedEvents[targetIndex];
       updatedEvents[targetIndex] = temp;
 
-      let newActive = prev.activeEvent;
-      if (newActive && newActive.day === day) {
-        if (newActive.index === index) {
-          newActive = { ...newActive, index: targetIndex };
-        } else if (newActive.index === targetIndex) {
-          newActive = { ...newActive, index: index };
-        }
-      }
-
       return {
         ...prev,
-        activeEvent: newActive,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
       };
     });
-  };
-
-  const setActiveEvent = (dayNum, eventIndex) => {
-    setEditData(prev => ({
-      ...prev,
-      activeEvent: prev.activeEvent && prev.activeEvent.day === dayNum && prev.activeEvent.index === eventIndex ? null : { day: dayNum, index: eventIndex }
-    }));
   };
 
   const addDay = () => {
@@ -502,10 +488,10 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
-                                {/* 動態報告網址列表 */}
+                                {/* 報告網址列表 (安全防呆) */}
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">報告網址列表：</div>
-                                  {(ev.reportUrls || [""]).map((url, uIdx) => (
+                                  {(ev.reportUrls || []).map((url, uIdx) => (
                                     <div key={uIdx} className="flex items-center gap-1">
                                       <input 
                                         className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
@@ -636,7 +622,7 @@ export default function App() {
                 </div>
 
                 <div className="border-t border-gray-200 pt-2 mt-2">
-                  <label className="text-[10px] font-bold text-blue-600 block mb-2">自訂通訊欄位</label>
+                  <label className="text-[10px] text-blue-600 block mb-2">自訂通訊欄位</label>
                   <div className="space-y-2">
                     {(editData.contact.fields || []).map((field, idx) => (
                       <div key={idx} className="flex items-center gap-1.5">
