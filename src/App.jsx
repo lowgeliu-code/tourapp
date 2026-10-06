@@ -43,15 +43,30 @@ const defaultData = {
     { id: '7', label: '商務名片 (充足)' },
     { id: '8', label: '展覽入場 QR Code' }
   ],
-  contact: {
-    name: "Peter Liu",
-    title: "Sales",
-    lineId: "lowgeliu",
-    phone: "+886 976034854",
-    driverName: "佐藤 先生 (Sato)",
-    driverPhone: "+81 90-1234-5678",
-    carInfo: "東京 500 あ 12-34"
-  }
+  // 升級為左右彈性欄位結構的資訊卡片
+  infoCards: [
+    {
+      id: 'contact_main',
+      title: "主要聯絡窗口",
+      subtitle: "Sales",
+      name: "Peter Liu",
+      items: [
+        { label: "LINE ID", value: "lowgeliu" },
+        { label: "電話號碼", value: "+886 976034854" }
+      ]
+    },
+    {
+      id: 'driver_info',
+      title: "專車司機與推薦",
+      subtitle: "Transportation",
+      name: "佐藤 先生 (Sato)",
+      items: [
+        { label: "司機電話", value: "+81 90-1234-5678" },
+        { label: "車牌號碼", value: "東京 500 あ 12-34" },
+        { label: "推薦伴手禮", value: "東京車站限定 NY起司餅乾" }
+      ]
+    }
+  ]
 };
 
 export default function App() {
@@ -69,7 +84,9 @@ export default function App() {
         const mergedData = {
           ...defaultData,
           ...serverData,
-          contact: { ...defaultData.contact, ...(serverData.contact || {}) }
+          infoCards: (serverData?.infoCards && Array.isArray(serverData.infoCards) && serverData.infoCards.length > 0) 
+            ? serverData.infoCards 
+            : defaultData.infoCards
         };
         setAppData(mergedData);
         setEditData(mergedData); 
@@ -266,6 +283,75 @@ export default function App() {
       newCl.splice(index, 1);
       return { ...prev, checklist: newCl };
     });
+  };
+
+  // 資訊卡片左右彈性欄位管理函式
+  const handleInfoCardChange = (cardIdx, field, value) => {
+    setEditData(prev => {
+      const cards = [...(prev?.infoCards || [])];
+      if (!cards[cardIdx]) cards[cardIdx] = {};
+      cards[cardIdx] = { ...cards[cardIdx], [field]: value };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const handleInfoItemChange = (cardIdx, itemIdx, field, value) => {
+    setEditData(prev => {
+      const cards = [...(prev?.infoCards || [])];
+      if (!cards[cardIdx]) cards[cardIdx] = {};
+      const items = [...(cards[cardIdx]?.items || [])];
+      if (!items[itemIdx]) items[itemIdx] = {};
+      items[itemIdx] = { ...items[itemIdx], [field]: value };
+      cards[cardIdx] = { ...cards[cardIdx], items: items };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const addInfoItem = (cardIdx) => {
+    setEditData(prev => {
+      const cards = [...(prev?.infoCards || [])];
+      if (!cards[cardIdx]) cards[cardIdx] = {};
+      const items = [...(cards[cardIdx]?.items || []), { label: "項目名稱", value: "詳細內容" }];
+      cards[cardIdx] = { ...cards[cardIdx], items: items };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const removeInfoItem = (cardIdx, itemIdx) => {
+    setEditData(prev => {
+      const cards = [...(prev?.infoCards || [])];
+      if (!cards[cardIdx]) return prev;
+      const items = [...(cards[cardIdx]?.items || [])];
+      items.splice(itemIdx, 1);
+      cards[cardIdx] = { ...cards[cardIdx], items: items };
+      return { ...prev, infoCards: cards };
+    });
+  };
+
+  const addInfoCard = () => {
+    setEditData(prev => ({
+      ...prev,
+      infoCards: [
+        ...(prev?.infoCards || []),
+        {
+          id: Date.now().toString(),
+          title: "新增資訊卡片",
+          subtitle: "Category",
+          name: "標題名稱",
+          items: [{ label: "項目名稱", value: "內容說明" }]
+        }
+      ]
+    }));
+  };
+
+  const removeInfoCard = (cardIdx) => {
+    if (window.confirm("確定要刪除這張資訊卡片嗎？")) {
+      setEditData(prev => {
+        const cards = [...(prev?.infoCards || [])];
+        cards.splice(cardIdx, 1);
+        return { ...prev, infoCards: cards };
+      });
+    }
   };
 
   const getEventIcon = (type) => {
@@ -517,7 +603,7 @@ export default function App() {
               {isAdmin && (
                 <div className="ml-[72px] mt-2 font-mono">
                   <button onClick={() => addEvent(selectedDay)} className="flex items-center text-xs font-bold text-[#1E293B] bg-[#F1F5F9] px-3.5 py-2 rounded border border-[#2563EB] border-dashed hover:bg-[#E2E8F0]">
-                    <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 新進活動
+                    <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 新增活動
                   </button>
                 </div>
               )}
@@ -577,89 +663,81 @@ export default function App() {
 
             {isAdmin && (
               <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded-xl shadow-sm space-y-4 text-xs">
-                <div className="font-bold text-[#1E293B] border-b pb-2">
-                  <span>🔧 管理員：編輯資訊與聯絡人</span>
+                <div className="font-bold text-[#1E293B] flex items-center justify-between border-b pb-2">
+                  <span>🔧 管理員：管理資訊卡片 (左側標題、右側內容)</span>
+                  <button onClick={addInfoCard} className="bg-blue-600 text-white font-bold px-2.5 py-1 rounded text-[11px] flex items-center shadow">
+                    <PlusCircle size={13} className="mr-1" /> 新增資訊卡片
+                  </button>
                 </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[10px] text-gray-500 block mb-0.5">業務姓名</label>
-                    <input className="w-full border rounded p-1.5 bg-white text-xs font-bold" value={editData?.contact?.name || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, name: e.target.value}})} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 block mb-0.5">職稱</label>
-                    <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData?.contact?.title || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, title: e.target.value}})} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 block mb-0.5">LINE ID</label>
-                    <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData?.contact?.lineId || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, lineId: e.target.value}})} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 block mb-0.5">電話號碼</label>
-                    <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData?.contact?.phone || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, phone: e.target.value}})} />
-                  </div>
 
-                  <div className="border-t pt-3 mt-3">
-                    <div className="font-bold text-[#1E293B] mb-2">🚗 專車司機與其他推薦資訊</div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[10px] text-gray-500 block mb-0.5">司機姓名</label>
-                        <input className="w-full border rounded p-1.5 bg-white text-xs font-bold" value={editData?.contact?.driverName || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, driverName: e.target.value}})} />
+                {(displayData?.infoCards || []).map((card, cIdx) => (
+                  <div key={card?.id || cIdx} className="bg-white border border-gray-300 p-3 rounded-lg space-y-2.5 shadow-sm">
+                    <div className="flex items-center justify-between gap-2 border-b pb-2">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <input className="border rounded p-1 text-[11px] font-bold" value={card?.title || ""} onChange={(e) => handleInfoCardChange(cIdx, 'title', e.target.value)} placeholder="卡片大標題 (如 主要聯絡窗口)" />
+                        <input className="border rounded p-1 text-[11px]" value={card?.subtitle || ""} onChange={(e) => handleInfoCardChange(cIdx, 'subtitle', e.target.value)} placeholder="副標題 (如 Sales)" />
                       </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 block mb-0.5">司機電話</label>
-                        <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData?.contact?.driverPhone || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, driverPhone: e.target.value}})} />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 block mb-0.5">車牌 / 推薦伴手禮備註</label>
-                        <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData?.contact?.carInfo || ""} onChange={(e) => setEditData({...editData, contact: {...editData.contact, carInfo: e.target.value}})} />
-                      </div>
+                      <button onClick={() => removeInfoCard(cIdx)} className="text-red-600 p-1.5 bg-red-50 hover:bg-red-100 rounded">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1">
+                      <input className="border rounded p-1 text-[11px] font-bold" value={card?.name || ""} onChange={(e) => handleInfoCardChange(cIdx, 'name', e.target.value)} placeholder="主要名稱 (如 Peter Liu)" />
+                    </div>
+
+                    {/* 左右彈性欄位 (左邊填標題如 LINE ID、右邊填內容) */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="text-[10px] font-bold text-[#2563EB]">明細欄位 (左邊填標題，右邊填內容)：</div>
+                      {(card?.items || []).map((item, itemIdx) => (
+                        <div key={itemIdx} className="flex items-center gap-1.5">
+                          <input 
+                            className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-1 bg-white font-bold text-gray-700" 
+                            value={item?.label || ""} 
+                            onChange={(e) => handleInfoItemChange(cIdx, itemIdx, 'label', e.target.value)} 
+                            placeholder="標題 (如 LINE ID)" 
+                          />
+                          <input 
+                            className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-1 bg-white" 
+                            value={item?.value || ""} 
+                            onChange={(e) => handleInfoItemChange(cIdx, itemIdx, 'value', e.target.value)} 
+                            placeholder="顯示內容 (如 lowgeliu)" 
+                          />
+                          <button onClick={() => removeInfoItem(cIdx, itemIdx)} className="text-red-600 p-1 bg-red-50 rounded">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => addInfoItem(cIdx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-1 rounded border border-blue-200 border-dashed mt-1">
+                        + 新增資訊項目
+                      </button>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             )}
 
+            {/* 讀取模式：精美渲染所有資訊卡片 */}
             <div className="space-y-4">
-              <div className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
-                <div className="p-4 flex items-center border-b border-[#2D3748]">
-                  <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
-                  <div>
-                    <div className="text-[9px] opacity-70 tracking-widest uppercase">{displayData?.contact?.title || "Sales"}</div>
-                    <div className="text-base font-bold">{displayData?.contact?.name || "Peter Liu"}</div>
+              {(displayData?.infoCards || []).map((card, cIdx) => (
+                <div key={card?.id || cIdx} className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
+                  <div className="p-4 flex items-center border-b border-[#2D3748]">
+                    <div className="bg-[#2563EB] text-white rounded p-2.5 mr-3"><User size={20} /></div>
+                    <div>
+                      <div className="text-[9px] opacity-70 tracking-widest uppercase">{card?.subtitle || card?.title}</div>
+                      <div className="text-base font-bold">{card?.name}</div>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3 bg-[#111827] text-xs">
+                    {(card?.items || []).map((item, itemIdx) => (
+                      <div key={itemIdx}>
+                        <div className="text-[9px] opacity-60 uppercase">{item?.label}</div>
+                        <div className="font-bold tracking-wider mt-0.5">{item?.value}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="p-4 space-y-3 bg-[#111827] text-xs">
-                  <div>
-                    <div className="text-[9px] opacity-60 uppercase">LINE ID</div>
-                    <div className="font-bold tracking-wider mt-0.5">{displayData?.contact?.lineId || "lowgeliu"}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] opacity-60 uppercase">電話號碼</div>
-                    <div className="font-bold tracking-wider mt-0.5">{displayData?.contact?.phone || "+886 976034854"}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[#1A2332] text-white rounded-lg shadow-md overflow-hidden border-t-2 border-[#3B82F6]">
-                <div className="p-4 flex items-center border-b border-[#2D3748]">
-                  <div className="bg-[#3B82F6] text-white rounded p-2.5 mr-3"><Hotel size={20} /></div>
-                  <div>
-                    <div className="text-[9px] opacity-70 tracking-widest uppercase">Transportation & Guide</div>
-                    <div className="text-base font-bold">{displayData?.contact?.driverName || "佐藤 先生"}</div>
-                  </div>
-                </div>
-                <div className="p-4 space-y-3 bg-[#111827] text-xs">
-                  <div>
-                    <div className="text-[9px] opacity-60 uppercase">司機電話</div>
-                    <div className="font-bold tracking-wider mt-0.5">{displayData?.contact?.driverPhone || "+81 90-1234-5678"}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] opacity-60 uppercase">車牌與推薦備註</div>
-                    <div className="font-bold tracking-wider mt-0.5">{displayData?.contact?.carInfo || "東京 500 あ 12-34"}</div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="mt-auto pt-6 pb-4 text-center">
