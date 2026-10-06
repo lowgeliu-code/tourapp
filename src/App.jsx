@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Home, Calendar, CheckSquare, User, MapPin, 
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star
+  Plane, Coffee, Store, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -25,7 +25,7 @@ const defaultData = {
   eventLocation: "東京",
   eventDate: "2026.12.1 — 12.03",
   announcement: "小提醒～9:50記得帶著展覽票在Hall 2集合喔！",
-  activeEvent: null, // 記錄目前被勾選為「現在行程」的物件 { dayIndex, eventIndex }
+  activeEvent: null,
   itinerary: {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
       { time: "9:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", attachmentUrl: "" },
@@ -49,7 +49,7 @@ const defaultData = {
     name: "Lowgeliu",
     title: "sales",
     fields: [
-      { label: "LINE ID", value: "mike_chiang_0907" }
+      { label: "LINE ID", value: "mike_line_0907" }
     ]
   }
 };
@@ -139,10 +139,11 @@ export default function App() {
       setEditData(prev => {
         const updatedEvents = [...prev.itinerary[day].events];
         updatedEvents.splice(index, 1);
-        // 如果剛好刪除的是現在行程，清空 activeEvent
         let newActive = prev.activeEvent;
         if (newActive && newActive.day === day && newActive.index === index) {
           newActive = null;
+        } else if (newActive && newActive.day === day && newActive.index > index) {
+          newActive = { ...newActive, index: newActive.index - 1 };
         }
         return {
           ...prev,
@@ -153,7 +154,37 @@ export default function App() {
     }
   };
 
-  // 設為現在行程
+  // 調整行程順序 (往上或往下)
+  const moveEvent = (day, index, direction) => {
+    setEditData(prev => {
+      const updatedEvents = [...prev.itinerary[day].events];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+      if (targetIndex < 0 || targetIndex >= updatedEvents.length) return prev;
+
+      // 交換位置
+      const temp = updatedEvents[index];
+      updatedEvents[index] = updatedEvents[targetIndex];
+      updatedEvents[targetIndex] = temp;
+
+      // 追蹤並更新「現在行程」的指標
+      let newActive = prev.activeEvent;
+      if (newActive && newActive.day === day) {
+        if (newActive.index === index) {
+          newActive = { ...newActive, index: targetIndex };
+        } else if (newActive.index === targetIndex) {
+          newActive = { ...newActive, index: index };
+        }
+      }
+
+      return {
+        ...prev,
+        activeEvent: newActive,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
   const setActiveEvent = (dayNum, eventIndex) => {
     setEditData(prev => ({
       ...prev,
@@ -250,7 +281,6 @@ export default function App() {
   const displayData = isAdmin ? editData : appData;
   const currentDay = displayData.itinerary[selectedDay] || displayData.itinerary[1];
 
-  // 自動計算「現在行程」與「下一個行程 (NEXT)」
   let currentEventObj = null;
   let nextEventObj = null;
 
@@ -258,7 +288,6 @@ export default function App() {
     const { day, index } = displayData.activeEvent;
     if (displayData.itinerary[day] && displayData.itinerary[day].events[index]) {
       currentEventObj = displayData.itinerary[day].events[index];
-      // 尋找下一個行程（同一天的下一個，若沒有則找後一天的第一個）
       if (displayData.itinerary[day].events[index + 1]) {
         nextEventObj = displayData.itinerary[day].events[index + 1];
       } else {
@@ -270,7 +299,6 @@ export default function App() {
     }
   }
 
-  // 如果沒有設定「現在行程」，則預設把 Day 1的第一個行程當作 Next，第二個當作再下一個
   if (!currentEventObj) {
     const firstDayEvents = displayData.itinerary[1]?.events || [];
     if (firstDayEvents.length > 0) {
@@ -330,7 +358,6 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* 現在行程卡片 */}
                   <div className="bg-[#1E293B] text-white p-4 rounded shadow-sm border-l-2 border-[#3B82F6]">
                     <div className="text-[10px] font-mono opacity-80 mb-1">現在行程</div>
                     {currentEventObj ? (
@@ -347,7 +374,6 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* NEXT // 下一站卡片 (動態連動) */}
                   <div className="bg-white border border-[#CBD5E1] p-4 rounded shadow-sm">
                     <div className="text-[10px] font-mono text-[#64748B] mb-1">NEXT // 下一站</div>
                     {nextEventObj ? (
@@ -392,7 +418,7 @@ export default function App() {
             </div>
             
             <p className="text-[11px] text-gray-500 mb-4 font-mono">
-              {isAdmin ? "🔧 管理員模式：您可以編輯、增刪議程，並點擊星號設定「現在行程」。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
+              {isAdmin ? "🔧 管理員模式：可使用上下箭頭調整順序、點擊星號設定「現在行程」。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
             <div className="bg-[#F1F5F9] rounded p-1.5 flex items-center mb-5 overflow-x-auto shadow-inner gap-1 border border-[#CBD5E1]">
@@ -481,6 +507,26 @@ export default function App() {
                     <div className={`flex-1 ml-2.5 bg-white border ${isActive ? 'border-2 border-amber-500 shadow-md' : isAdmin ? 'border-[#2563EB]' : 'border-[#CBD5E1]'} rounded p-3.5 shadow-sm relative`}>
                       {isAdmin && (
                         <div className="absolute top-2 right-2 flex items-center gap-1">
+                          {/* 排序按鈕 (往上 / 往下) */}
+                          <div className="flex bg-gray-100 rounded border border-gray-300 overflow-hidden">
+                            <button 
+                              onClick={() => moveEvent(selectedDay, idx, 'up')} 
+                              disabled={idx === 0}
+                              title="往上移"
+                              className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30 border-r border-gray-300"
+                            >
+                              <ArrowUp size={13} />
+                            </button>
+                            <button 
+                              onClick={() => moveEvent(selectedDay, idx, 'down')} 
+                              disabled={idx === currentDay.events.length - 1}
+                              title="往下移"
+                              className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30"
+                            >
+                              <ArrowDown size={13} />
+                            </button>
+                          </div>
+
                           <button 
                             onClick={() => setActiveEvent(selectedDay, idx)} 
                             title="設為現在行程"
@@ -506,7 +552,7 @@ export default function App() {
                         
                         <div className="flex-1 w-full mr-3">
                           {isAdmin ? (
-                            <div className="space-y-1.5 w-full pt-6">
+                            <div className="space-y-1.5 w-full pt-8">
                               <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
                               <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
                               <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
