@@ -121,7 +121,6 @@ export default function App() {
     });
   };
 
-  // 附件列表增刪改 (支援預覽名稱與網址)
   const handleAttachmentChange = (day, eventIndex, attIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
@@ -351,8 +350,8 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            {/* 凍結式精巧日期切換列 (加上高層級 z-20 與實心不透明背景，徹底解決藍圈透過去的問題) */}
-            <div className="sticky top-14 z-25 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-md gap-1">
+            {/* 凍結式日期切換列：設定高層級 z-50 與完全不透明的實心背景，確保行程捲上來時會被遮擋在下方 */}
+            <div className="sticky top-14 z-50 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
                 const dayInfo = displayData.itinerary[dayNum];
@@ -414,6 +413,7 @@ export default function App() {
               {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => {
                 return (
                   <div key={idx} className="flex mb-5 relative group font-mono">
+                    {/* 將時間軸線條的 z-index 設低 (z-0)，確保絕對不會蓋過日期列 */}
                     {idx !== currentDay.events.length - 1 && <div className="absolute left-[66px] top-6 bottom-[-24px] w-[2px] bg-[#CBD5E1] z-0"></div>}
                     
                     <div className="w-14 shrink-0 text-right pr-2.5 pt-3">
@@ -476,7 +476,6 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
-                                {/* 附件列表 (含預覽名稱與網址) */}
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">附件列表：</div>
                                   {(ev.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
@@ -514,7 +513,6 @@ export default function App() {
                         </div>
                       </div>
                       
-                      {/* 讀取模式按鈕 (支援自訂預覽名稱) */}
                       {!isAdmin && (ev.mapUrl || (ev.attachments && ev.attachments.some(a => a.url))) && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
                           {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
