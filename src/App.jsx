@@ -50,13 +50,15 @@ const defaultData = {
   contact: {
     name: "Mike Chiang",
     title: "Senior Technology Analyst",
-    lineText: "開啟通訊通道",
-    wechatId: "mike_chiang_0907"
+    fields: [
+      { label: "LINE ID", value: "mike_line_0907" },
+      { label: "電話號碼", value: "+886 912-345-678" }
+    ]
   }
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('home'); // 預設鎖定在首頁
+  const [activeTab, setActiveTab] = useState('home');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
   const [appData, setAppData] = useState(defaultData);
@@ -76,7 +78,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // 個人勾選狀態存在本機
   const [userChecklist, setUserChecklist] = useState(() => {
     const saved = localStorage.getItem('tour_user_checklist');
     return saved ? JSON.parse(saved) : {};
@@ -114,7 +115,6 @@ export default function App() {
     }
   };
 
-  // 行程編輯函式
   const handleEventChange = (day, index, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
@@ -178,7 +178,6 @@ export default function App() {
     }
   };
 
-  // 第三分頁（裝備清單）編輯函式
   const handleChecklistChange = (index, value) => {
     setEditData(prev => {
       const newCl = [...prev.checklist];
@@ -202,6 +201,33 @@ export default function App() {
     });
   };
 
+  // 聯絡人自訂欄位編輯函式
+  const handleContactFieldChange = (index, field, value) => {
+    setEditData(prev => {
+      const newFields = [...(prev.contact.fields || [])];
+      newFields[index] = { ...newFields[index], [field]: value };
+      return { ...prev, contact: { ...prev.contact, fields: newFields } };
+    });
+  };
+
+  const addContactField = () => {
+    setEditData(prev => ({
+      ...prev,
+      contact: { 
+        ...prev.contact, 
+        fields: [...(prev.contact.fields || []), { label: "聯絡項目", value: "詳細資訊" }] 
+      }
+    }));
+  };
+
+  const removeContactField = (index) => {
+    setEditData(prev => {
+      const newFields = [...prev.contact.fields];
+      newFields.splice(index, 1);
+      return { ...prev, contact: { ...prev.contact, fields: newFields } };
+    });
+  };
+
   const getEventIcon = (type) => {
     switch(type) {
       case 'plane': return <Plane size={18} />;
@@ -219,7 +245,6 @@ export default function App() {
       case 'home':
         return (
           <div className="p-4 space-y-4 animate-in fade-in duration-300">
-            {/* 外資券商專業主視覺看板 */}
             <div className="bg-[#1A2332] text-[#E2E8F0] p-6 rounded shadow-md border-l-4 border-[#3B82F6] relative overflow-hidden">
               <div className="relative z-10">
                 <div className="text-[10px] tracking-widest text-[#60A5FA] font-mono mb-1">EQUITY RESEARCH // 2026</div>
@@ -320,7 +345,6 @@ export default function App() {
             
             <p className="text-[11px] text-gray-500 mb-4 font-mono">點擊下方日期檢視當日詳細參訪與會議安排。</p>
 
-            {/* 日期導覽列 */}
             <div className="bg-[#F1F5F9] rounded p-1.5 flex items-center mb-5 overflow-x-auto shadow-inner gap-1 border border-[#CBD5E1]">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
@@ -366,7 +390,6 @@ export default function App() {
               )}
             </div>
 
-            {/* 置中大標題 */}
             <div className="text-center border-b border-[#CBD5E1] pb-4 mb-5">
               <span className="bg-[#1E293B] text-white font-mono text-[9px] font-bold px-2.5 py-0.5 rounded mb-1.5 inline-block tracking-wider">DAY {selectedDay}</span>
               {isAdmin ? (
@@ -380,7 +403,6 @@ export default function App() {
               )}
             </div>
 
-            {/* 時間軸清單 */}
             <div className="relative">
               {currentDay.events && currentDay.events.length > 0 ? currentDay.events.map((ev, idx) => (
                 <div key={idx} className="flex mb-5 relative group font-mono">
@@ -532,19 +554,43 @@ export default function App() {
             </div>
 
             {isAdmin && (
-              <div className="bg-[#F8FAFC] border border-[#CBD5E1] p-3 rounded space-y-2 text-xs">
-                <div className="font-bold text-[#334155] mb-1">🔧 管理員：編輯聯絡人資訊</div>
+              <div className="bg-[#F8FAFC] border border-[#CBD5E1] p-3 rounded space-y-3 text-xs">
+                <div className="font-bold text-[#334155] mb-1">🔧 管理員：自訂聯絡窗口與欄位</div>
                 <div>
                   <label className="text-[10px] text-gray-500 block mb-0.5">負責人姓名</label>
-                  <input className="w-full border rounded p-1 bg-white text-xs font-bold" value={editData.contact.name} onChange={(e) => setEditData({...editData, contact: {...editData.contact, name: e.target.value}})} />
+                  <input className="w-full border rounded p-1.5 bg-white text-xs font-bold" value={editData.contact.name} onChange={(e) => setEditData({...editData, contact: {...editData.contact, name: e.target.value}})} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 block mb-0.5">職稱/備註</label>
-                  <input className="w-full border rounded p-1 bg-white text-xs" value={editData.contact.title} onChange={(e) => setEditData({...editData, contact: {...editData.contact, title: e.target.value}})} />
+                  <label className="text-[10px] text-gray-500 block mb-0.5">職稱 / 團隊</label>
+                  <input className="w-full border rounded p-1.5 bg-white text-xs" value={editData.contact.title} onChange={(e) => setEditData({...editData, contact: {...editData.contact, title: e.target.value}})} />
                 </div>
-                <div>
-                  <label className="text-[10px] text-gray-500 block mb-0.5">WeChat ID</label>
-                  <input className="w-full border rounded p-1 bg-white text-xs" value={editData.contact.wechatId} onChange={(e) => setEditData({...editData, contact: {...editData.contact, wechatId: e.target.value}})} />
+
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <label className="text-[10px] font-bold text-blue-600 block mb-2">自訂通訊欄位 (可隨意改為 LINE ID、電話等)</label>
+                  <div className="space-y-2">
+                    {(editData.contact.fields || []).map((field, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <input 
+                          className="w-1/3 border rounded p-1 bg-white text-[11px] font-bold text-gray-700" 
+                          value={field.label} 
+                          onChange={(e) => handleContactFieldChange(idx, 'label', e.target.value)} 
+                          placeholder="欄位名(如LINE ID)" 
+                        />
+                        <input 
+                          className="flex-1 border rounded p-1 bg-white text-[11px]" 
+                          value={field.value} 
+                          onChange={(e) => handleContactFieldChange(idx, 'value', e.target.value)} 
+                          placeholder="內容" 
+                        />
+                        <button onClick={() => removeContactField(idx)} className="text-red-600 p-1 bg-red-50 rounded hover:bg-red-100">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={addContactField} className="flex items-center text-xs font-bold text-[#2563EB] bg-blue-50 px-3 py-1.5 rounded border border-blue-200 border-dashed mt-2">
+                    <PlusCircle size={14} className="mr-1" /> 新增聯絡欄位
+                  </button>
                 </div>
               </div>
             )}
@@ -558,8 +604,12 @@ export default function App() {
                 </div>
               </div>
               <div className="p-4 space-y-3 bg-[#111827] text-xs">
-                <div><div className="text-[9px] opacity-60">LINE CONTACT</div><div className="font-bold flex justify-between items-center mt-0.5"><span>{displayData.contact.lineText}</span><ExternalLink size={14} className="text-[#60A5FA]" /></div></div>
-                <div><div className="text-[9px] opacity-60">WECHAT ID</div><div className="font-bold tracking-wider mt-0.5">{displayData.contact.wechatId}</div></div>
+                {displayData.contact.fields && displayData.contact.fields.map((f, i) => (
+                  <div key={i}>
+                    <div className="text-[9px] opacity-60 uppercase">{f.label}</div>
+                    <div className="font-bold tracking-wider mt-0.5">{f.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -577,7 +627,6 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-24 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
-      {/* 頂部導覽列 (純淨外資券商風格，無工具把手) */}
       <div className="bg-white text-center py-3.5 border-b border-[#CBD5E1] shadow-sm sticky top-0 z-20 flex justify-center items-center px-4">
         <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
           <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData.brandName}
@@ -587,7 +636,6 @@ export default function App() {
       
       {renderContent()}
 
-      {/* 底部導覽列 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
           { id: 'home', icon: Home, label: '首頁' },
