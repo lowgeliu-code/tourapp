@@ -121,7 +121,6 @@ export default function App() {
     });
   };
 
-  // 安全防呆的報告網址增刪改函式
   const handleReportUrlChange = (day, eventIndex, urlIndex, value) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
@@ -180,15 +179,8 @@ export default function App() {
       setEditData(prev => {
         const updatedEvents = [...prev.itinerary[day].events];
         updatedEvents.splice(index, 1);
-        let newActive = prev.activeEvent;
-        if (newActive && newActive.day === day && newActive.index === index) {
-          newActive = null;
-        } else if (newActive && newActive.day === day && newActive.index > index) {
-          newActive = { ...newActive, index: newActive.index - 1 };
-        }
         return {
           ...prev,
-          activeEvent: newActive,
           itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
         };
       });
@@ -308,7 +300,7 @@ export default function App() {
     switch (activeTab) {
       case 'itinerary':
         return (
-          <div className="p-4 animate-in fade-in duration-300">
+          <div className="p-4 animate-in fade-in duration-300 pb-20">
             {isAdmin && (
               <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded mb-6 shadow-sm space-y-3 font-mono">
                 <div className="text-xs font-bold text-[#1E293B] border-b border-gray-200 pb-2 flex items-center">
@@ -352,25 +344,20 @@ export default function App() {
                 <div className="text-[10px] font-mono text-[#2563EB] font-bold tracking-widest">TIMELINE</div>
                 <h2 className="text-xl font-black text-[#0F172A] font-mono">行程議程總覽</h2>
               </div>
-              {isAdmin && (
-                <button onClick={handleSaveToCloud} className="bg-[#2563EB] text-white font-bold text-[11px] px-3 py-1.5 rounded font-mono shadow-sm hover:bg-[#1D4ED8] flex items-center">
-                  <Save size={13} className="mr-1" /> 儲存變更
-                </button>
-              )}
             </div>
             
             <p className="text-[11px] text-gray-500 mb-4 font-mono">
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            {/* 凍結式精巧日期切換列 */}
-            <div className="sticky top-14 z-10 bg-[#F8FAFC]/95 backdrop-blur-sm rounded-lg p-1 flex items-center mb-4 shadow-sm gap-1 border border-[#CBD5E1]">
+            {/* 凍結式精巧日期切換列 (改為不透明實心背景，徹底解決線條透過去的問題) */}
+            <div className="sticky top-14 z-10 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-md gap-1">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
                 const dayInfo = displayData.itinerary[dayNum];
                 return (
                   <div key={dayNum} className="relative group shrink-0">
-                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white'}`}>
+                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white border border-gray-200'}`}>
                       <span className="text-[8px] opacity-80">D-{dayNum}</span>
                       {isAdmin ? (
                         <div className="space-y-0.5 text-center">
@@ -402,7 +389,7 @@ export default function App() {
               })}
 
               {isAdmin && (
-                <button onClick={addDay} className="flex flex-col items-center justify-center py-2 px-2.5 rounded text-[#334155] bg-white hover:bg-gray-50 border border-dashed border-[#2563EB] shrink-0 font-mono">
+                <button onClick={addDay} className="flex flex-col items-center justify-center py-2 px-2.5 rounded text-[#334155] bg-white hover:bg-gray-50 border border-dashed border-[#2563EB] shrink-0 font-mono shadow-sm">
                   <PlusCircle size={14} />
                   <span className="text-[8px] font-bold mt-0.5">+ 天數</span>
                 </button>
@@ -470,7 +457,7 @@ export default function App() {
                             <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
                               <option value="pin">📍 地標</option>
                               <option value="plane">✈️ 班機</option>
-                              <option value="coffee">☕️ 餐飲</option>
+                              <option value="coffee">☕️️ 餐飲</option>
                               <option value="store">🏢 展館</option>
                               <option value="hotel">🏨 飯店</option>
                               <option value="activity">📅 活動</option>
@@ -488,7 +475,6 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
-                                {/* 報告網址列表 (安全防呆) */}
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">報告網址列表：</div>
                                   {(ev.reportUrls || []).map((url, uIdx) => (
@@ -520,7 +506,6 @@ export default function App() {
                         </div>
                       </div>
                       
-                      {/* 讀取模式按鈕 */}
                       {!isAdmin && (ev.mapUrl || (ev.reportUrls && ev.reportUrls.some(u => u))) && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
                           {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
@@ -551,17 +536,12 @@ export default function App() {
 
       case 'checklist':
         return (
-          <div className="p-4 animate-in fade-in duration-300 font-mono">
+          <div className="p-4 animate-in fade-in duration-300 font-mono pb-20">
             <div className="flex justify-between items-center mb-2">
               <div>
                 <div className="text-[10px] text-[#2563EB] font-bold tracking-widest mb-1">COMPLIANCE & CHECK</div>
                 <h2 className="text-xl font-black text-[#0F172A]">行前裝備清單</h2>
               </div>
-              {isAdmin && (
-                <button onClick={handleSaveToCloud} className="bg-[#2563EB] text-white font-bold text-[11px] px-3 py-1.5 rounded font-mono shadow-sm hover:bg-[#1D4ED8] flex items-center">
-                  <Save size={13} className="mr-1" /> 儲存清單
-                </button>
-              )}
             </div>
             
             <p className="text-[11px] text-gray-500 mb-4">勾選狀態僅保留在當前終端裝置，管理員可編輯項目。</p>
@@ -596,17 +576,12 @@ export default function App() {
 
       case 'contact':
         return (
-          <div className="p-4 space-y-4 animate-in fade-in duration-300 flex flex-col h-[75vh] font-mono">
+          <div className="p-4 space-y-4 animate-in fade-in duration-300 flex flex-col h-[75vh] font-mono pb-20">
             <div className="flex justify-between items-center mb-1">
               <div>
                 <div className="text-[10px] text-[#2563EB] font-bold tracking-widest mb-1">COMMUNICATION</div>
                 <h2 className="text-xl font-black text-[#0F172A]">通訊與聯絡窗口</h2>
               </div>
-              {isAdmin && (
-                <button onClick={handleSaveToCloud} className="bg-[#2563EB] text-white font-bold text-[11px] px-3 py-1.5 rounded font-mono shadow-sm hover:bg-[#1D4ED8] flex items-center">
-                  <Save size={13} className="mr-1" /> 儲存聯絡人
-                </button>
-              )}
             </div>
 
             {isAdmin && (
@@ -670,7 +645,7 @@ export default function App() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-24 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
+    <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
       <div className="bg-white text-center py-3.5 border-b border-[#CBD5E1] shadow-sm sticky top-0 z-20 flex justify-center items-center px-4">
         <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
           <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData.brandName}
@@ -680,6 +655,19 @@ export default function App() {
       
       {renderContent()}
 
+      {/* --- 管理員專用：懸浮固定在畫面下方的儲存按鈕 --- */}
+      {isAdmin && (
+        <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-30 pointer-events-none animate-in fade-in duration-200">
+          <button 
+            onClick={handleSaveToCloud}
+            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-center font-mono text-sm pointer-events-auto border-2 border-white/20 active:scale-95 transition-all"
+          >
+            <Save size={18} className="mr-2" /> 💾 儲存所有變更並同步至雲端
+          </button>
+        </div>
+      )}
+
+      {/* 底部導覽列 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
           { id: 'itinerary', icon: Calendar, label: '行程' },
