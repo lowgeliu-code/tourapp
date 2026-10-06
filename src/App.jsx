@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, User, MapPin, 
-  ExternalLink, Edit3, Save,
-  Plane, Coffee, Store, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown
+  Bell, ExternalLink, Settings, Edit3, Save,
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -27,8 +27,7 @@ const defaultData = {
   activeEvent: null,
   itinerary: {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
-      { time: "9:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", attachmentUrl: "" },
-      { time: "12:15", endTime: "16:35", icon: "plane", title: "CI104 台北 → 成田", subtitle: "TPE → NRT", note: "抵達後搭乘中巴前往飯店", mapUrl: "", attachmentUrl: "" }
+      { time: "9:45", endTime: "", icon: "pin", title: "桃園機場集合", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", reportUrls: [""] }
     ]},
     2: { date: "9/30", weekday: "週三", title: "PCB / CCL專家", events: [] },
     3: { date: "10/1", weekday: "週四", title: "展覽參訪", events: [] },
@@ -54,7 +53,7 @@ const defaultData = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('itinerary'); // 預設進入行程分頁
+  const [activeTab, setActiveTab] = useState('itinerary');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
   const [appData, setAppData] = useState(defaultData);
@@ -122,10 +121,50 @@ export default function App() {
     });
   };
 
+  // 報告網址增刪改
+  const handleReportUrlChange = (day, eventIndex, urlIndex, value) => {
+    setEditData(prev => {
+      const updatedEvents = [...prev.itinerary[day].events];
+      const urls = [...(updatedEvents[eventIndex].reportUrls || [""])];
+      urls[urlIndex] = value;
+      updatedEvents[eventIndex] = { ...updatedEvents[eventIndex], reportUrls: urls };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
+  const addReportUrl = (day, eventIndex) => {
+    setEditData(prev => {
+      const updatedEvents = [...prev.itinerary[day].events];
+      const urls = [...(updatedEvents[eventIndex].reportUrls || [""])];
+      urls.push("");
+      updatedEvents[eventIndex] = { ...updatedEvents[index], reportUrls: urls };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
+  const removeReportUrl = (day, eventIndex, urlIndex) => {
+    setEditData(prev => {
+      const updatedEvents = [...prev.itinerary[day].events];
+      const urls = [...(updatedEvents[eventIndex].reportUrls || [""])];
+      urls.splice(urlIndex, 1);
+      updatedEvents[eventIndex] = { ...updatedEvents[eventIndex], reportUrls: urls };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
   const addEvent = (day) => {
     setEditData(prev => {
       const updatedEvents = [...prev.itinerary[day].events];
-      updatedEvents.push({ time: "12:00", endTime: "", icon: "pin", title: "新增研究議程", subtitle: "", note: "", mapUrl: "", attachmentUrl: "" });
+      updatedEvents.push({ time: "12:00", endTime: "", icon: "pin", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", reportUrls: [""] });
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -134,7 +173,7 @@ export default function App() {
   };
 
   const removeEvent = (day, index) => {
-    if(window.confirm('確定要移除此項議程？')){
+    if(window.confirm('確定要移除此項活動？')){
       setEditData(prev => {
         const updatedEvents = [...prev.itinerary[day].events];
         updatedEvents.splice(index, 1);
@@ -206,7 +245,7 @@ export default function App() {
       alert("基底 DAY 1 無法移除");
       return;
     }
-    if (window.confirm(`確定要刪除 DAY ${dayNum} 及其所有議程？`)) {
+    if (window.confirm(`確定要刪除 DAY ${dayNum} 及其所有活動？`)) {
       setEditData(prev => {
         const newItin = { ...prev.itinerary };
         delete newItin[dayNum];
@@ -267,10 +306,12 @@ export default function App() {
 
   const getEventIcon = (type) => {
     switch(type) {
-      case 'plane': return <Plane size={18} />;
-      case 'coffee': return <Coffee size={18} />;
-      case 'store': return <Store size={18} />;
-      default: return <MapPin size={18} />;
+      case 'plane': return <Plane size={16} />;
+      case 'coffee': return <Coffee size={16} />;
+      case 'store': return <Store size={16} />;
+      case 'hotel': return <Hotel size={16} />;
+      case 'activity': return <CalendarDays size={16} />;
+      default: return <MapPin size={16} />;
     }
   };
 
@@ -282,7 +323,6 @@ export default function App() {
       case 'itinerary':
         return (
           <div className="p-4 animate-in fade-in duration-300">
-            {/* 管理員專用：大會基本資訊設定面板 */}
             {isAdmin && (
               <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded mb-6 shadow-sm space-y-3 font-mono">
                 <div className="text-xs font-bold text-[#1E293B] border-b border-gray-200 pb-2 flex items-center">
@@ -309,7 +349,6 @@ export default function App() {
               </div>
             )}
 
-            {/* 頂部外資專業展會資訊卡片 */}
             <div className="bg-[#1A2332] text-[#E2E8F0] p-5 rounded shadow-md border-l-4 border-[#3B82F6] mb-6 relative overflow-hidden font-mono">
               <div className="relative z-10">
                 <div className="text-[10px] tracking-widest text-[#60A5FA] mb-1">EQUITY RESEARCH // 2026</div>
@@ -338,22 +377,23 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            <div className="bg-[#F1F5F9] rounded p-1.5 flex items-center mb-5 overflow-x-auto shadow-inner gap-1 border border-[#CBD5E1]">
+            {/* 凍結式精巧日期切換列 */}
+            <div className="sticky top-14 z-10 bg-[#F8FAFC]/95 backdrop-blur-sm rounded-lg p-1 flex items-center mb-4 shadow-sm gap-1 border border-[#CBD5E1]">
               {Object.keys(displayData.itinerary).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
                 const dayInfo = displayData.itinerary[dayNum];
                 return (
                   <div key={dayNum} className="relative group shrink-0">
-                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-2 px-3 rounded transition-all font-mono ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A]'}`}>
-                      <span className="text-[9px] opacity-80 mb-0.5">D-{dayNum}</span>
+                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white'}`}>
+                      <span className="text-[8px] opacity-80">D-{dayNum}</span>
                       {isAdmin ? (
                         <div className="space-y-0.5 text-center">
-                          <input className="w-10 text-center text-[11px] font-black bg-white border rounded text-[#1E293B]" value={dayInfo.date} onChange={(e) => {
+                          <input className="w-9 text-center text-[10px] font-black bg-white border rounded text-[#1E293B]" value={dayInfo.date} onChange={(e) => {
                             const newItin = {...editData.itinerary};
                             newItin[dayNum].date = e.target.value;
                             setEditData({...editData, itinerary: newItin});
                           }} />
-                          <input className="w-10 text-center text-[8px] bg-white border rounded text-gray-500" value={dayInfo.weekday} onChange={(e) => {
+                          <input className="w-9 text-center text-[8px] bg-white border rounded text-gray-500" value={dayInfo.weekday} onChange={(e) => {
                             const newItin = {...editData.itinerary};
                             newItin[dayNum].weekday = e.target.value;
                             setEditData({...editData, itinerary: newItin});
@@ -361,14 +401,14 @@ export default function App() {
                         </div>
                       ) : (
                         <>
-                          <span className="text-xs font-black">{dayInfo.date}</span>
-                          <span className="text-[9px] opacity-70">{dayInfo.weekday}</span>
+                          <span className="text-[11px] font-black">{dayInfo.date}</span>
+                          <span className="text-[8px] opacity-70">{dayInfo.weekday}</span>
                         </>
                       )}
                     </button>
                     {isAdmin && dayNum !== 1 && (
                       <button onClick={() => removeDay(dayNum)} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow">
-                        <Trash2 size={10} />
+                        <Trash2 size={9} />
                       </button>
                     )}
                   </div>
@@ -376,8 +416,8 @@ export default function App() {
               })}
 
               {isAdmin && (
-                <button onClick={addDay} className="flex flex-col items-center justify-center py-3 px-3 rounded text-[#334155] bg-white/70 hover:bg-white border border-dashed border-[#2563EB] shrink-0 font-mono">
-                  <PlusCircle size={16} />
+                <button onClick={addDay} className="flex flex-col items-center justify-center py-2 px-2.5 rounded text-[#334155] bg-white hover:bg-gray-50 border border-dashed border-[#2563EB] shrink-0 font-mono">
+                  <PlusCircle size={14} />
                   <span className="text-[8px] font-bold mt-0.5">+ 天數</span>
                 </button>
               )}
@@ -442,8 +482,12 @@ export default function App() {
                         <div className="bg-[#F1F5F9] text-[#1E293B] p-2 rounded mr-2.5 shrink-0">
                           {isAdmin ? (
                             <select className="bg-transparent text-xs text-[#1E293B] focus:outline-none font-mono" value={ev.icon} onChange={(e) => handleEventChange(selectedDay, idx, 'icon', e.target.value)}>
-                              <option value="pin">📍 地標</option><option value="plane">✈️ 班機</option>
-                              <option value="coffee">☕️ 餐飲</option><option value="store">🏢 展館</option>
+                              <option value="pin">📍 地標</option>
+                              <option value="plane">✈️ 班機</option>
+                              <option value="coffee">☕️ 餐飲</option>
+                              <option value="store">🏢 展館</option>
+                              <option value="hotel">🏨 飯店</option>
+                              <option value="activity">📅 活動</option>
                             </select>
                           ) : getEventIcon(ev.icon)}
                         </div>
@@ -454,9 +498,30 @@ export default function App() {
                               <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev.title} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
                               <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.subtitle} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
                               <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev.note} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
-                              <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1">
-                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
-                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.attachmentUrl} onChange={(e) => handleEventChange(selectedDay, idx, 'attachmentUrl', e.target.value)} placeholder="附件網址" />
+                              
+                              <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
+                                <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
+                                
+                                {/* 動態報告網址列表 */}
+                                <div className="space-y-1 pt-1">
+                                  <div className="text-[10px] font-bold text-[#2563EB]">報告網址列表：</div>
+                                  {(ev.reportUrls || [""]).map((url, uIdx) => (
+                                    <div key={uIdx} className="flex items-center gap-1">
+                                      <input 
+                                        className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
+                                        value={url} 
+                                        onChange={(e) => handleReportUrlChange(selectedDay, idx, uIdx, e.target.value)} 
+                                        placeholder={`報告網址 ${uIdx + 1}`} 
+                                      />
+                                      <button onClick={() => removeReportUrl(selectedDay, idx, uIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button onClick={() => addReportUrl(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
+                                    + 新增報告網址
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ) : (
@@ -469,10 +534,15 @@ export default function App() {
                         </div>
                       </div>
                       
-                      {!isAdmin && (ev.mapUrl || ev.attachmentUrl) && (
+                      {/* 讀取模式按鈕 */}
+                      {!isAdmin && (ev.mapUrl || (ev.reportUrls && ev.reportUrls.some(u => u))) && (
                         <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-[#F1F5F9] font-sans">
                           {ev.mapUrl && <a href={ev.mapUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps</a>}
-                          {ev.attachmentUrl && <a href={ev.attachmentUrl} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"><LinkIcon size={11} className="mr-1 text-[#2563EB]" /> 相關附件</a>}
+                          {ev.reportUrls && ev.reportUrls.map((u, i) => u ? (
+                            <a key={i} href={u} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
+                              <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> 報告連結 {i + 1}
+                            </a>
+                          ) : null)}
                         </div>
                       )}
                     </div>
@@ -485,7 +555,7 @@ export default function App() {
               {isAdmin && (
                 <div className="ml-[72px] mt-2 font-mono">
                   <button onClick={() => addEvent(selectedDay)} className="flex items-center text-xs font-bold text-[#1E293B] bg-[#F1F5F9] px-3.5 py-2 rounded border border-[#2563EB] border-dashed hover:bg-[#E2E8F0]">
-                    <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 增加研究議程
+                    <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 新增活動
                   </button>
                 </div>
               )}
@@ -624,7 +694,6 @@ export default function App() {
       
       {renderContent()}
 
-      {/* 底部導覽列 (已移除首頁，保留行程、裝備、通訊) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         {[
           { id: 'itinerary', icon: Calendar, label: '行程' },
