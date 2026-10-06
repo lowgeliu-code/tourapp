@@ -1,10 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Calendar, Map, CheckSquare, User, MapPin, ChevronRight, Bell, ExternalLink } from 'lucide-react';
+import { Home, Calendar, Map, CheckSquare, User, MapPin, ChevronRight, Bell, ExternalLink, Settings, Edit3, Save } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+
+// 1. 貼上您專屬的 Firebase 金鑰
+const firebaseConfig = {
+  apiKey: "AIzaSyAzO6RTxbdgy1eOUJzWVXa10BD09TBZYCc",
+  authDomain: "tourapp-d7926.firebaseapp.com",
+  projectId: "tourapp-d7926",
+  storageBucket: "tourapp-d7926.firebasestorage.app",
+  messagingSenderId: "907439445985",
+  appId: "1:907439445985:web:c86296309a31a8c3eea4a0"
+};
+
+// 2. 啟動資料庫
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
+  const [isAdmin, setIsAdmin] = useState(false);
   
-  // 關鍵修改：使用手機本地記憶體儲存勾選狀態，不需要雲端資料庫！
+  // 3. 準備雲端資料的狀態
+  const [appData, setAppData] = useState({
+    announcement: "載入中...",
+    nextTime: "...",
+    nextLocation: "載入中...",
+    nextDetail: "..."
+  });
+  
+  // 編輯模式用的暫存資料
+  const [editData, setEditData] = useState({});
+
+  // 4. 即時監聽雲端資料庫
+  useEffect(() => {
+    const docRef = doc(db, 'tourConfig', 'mainContent');
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setAppData(docSnap.data());
+        setEditData(docSnap.data()); // 同步給編輯器
+      } else {
+        // 如果是第一次使用，自動建立預設資料
+        const defaultData = {
+          announcement: "小提醒～9:50記得帶著展覽票在Hall 2集合喔！",
+          nextTime: "9:45",
+          nextLocation: "桃園機場集合",
+          nextDetail: "T2華航 團體報到櫃檯"
+        };
+        setDoc(docRef, defaultData);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 行前準備的個人紀錄 (存在手機本地，不放雲端)
   const [checklist, setChecklist] = useState(() => {
     const saved = localStorage.getItem('tour_checklist');
     return saved ? JSON.parse(saved) : {};
@@ -16,6 +65,32 @@ export default function App() {
 
   const toggleCheck = (id) => {
     setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // 儲存編輯內容到雲端
+  const handleSaveToCloud = async () => {
+    try {
+      await setDoc(doc(db, 'tourConfig', 'mainContent'), editData);
+      setIsAdmin(false);
+      alert('更新成功！所有客戶的畫面已同步。');
+    } catch (error) {
+      alert('更新失敗，請檢查網路連線。');
+    }
+  };
+
+  // 管理員登入機制
+  const handleAdminLogin = () => {
+    if (isAdmin) {
+      setIsAdmin(false);
+      return;
+    }
+    const pwd = prompt("請輸入主辦方管理密碼：\n(提示: 預設為 1234)");
+    if (pwd === "1234") {
+      setIsAdmin(true);
+      alert("✅ 登入成功！請切換到「首頁」進行修改。");
+    } else if (pwd !== null) {
+      alert("❌ 密碼錯誤");
+    }
   };
 
   const renderContent = () => {
@@ -35,36 +110,94 @@ export default function App() {
               </div>
             </div>
             
-            {/* 公告區 */}
-            <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="flex items-center">
-                <div className="bg-orange-200 p-2 rounded-xl mr-4">
-                  <Bell size={20} className="text-orange-700" />
+            {isAdmin ? (
+              /* --- 管理員編輯介面 --- */
+              <div className="bg-yellow-50 border-2 border-yellow-400 p-5 rounded-2xl shadow-sm">
+                <div className="flex items-center text-yellow-700 font-bold mb-4">
+                  <Edit3 size={20} className="mr-2" />
+                  管理員編輯模式
                 </div>
-                <div>
-                  <div className="text-xs text-orange-800 font-bold mb-1">重要公告</div>
-                  <div className="text-sm text-gray-800 font-medium">小提醒～9:50記得帶著展覽票在Hall...</div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">重要公告</label>
+                    <textarea 
+                      className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white" 
+                      rows="2"
+                      value={editData.announcement}
+                      onChange={(e) => setEditData({...editData, announcement: e.target.value})}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-1/3">
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">時間</label>
+                      <input 
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white font-bold" 
+                        value={editData.nextTime}
+                        onChange={(e) => setEditData({...editData, nextTime: e.target.value})}
+                      />
+                    </div>
+                    <div className="w-2/3">
+                      <label className="text-xs font-bold text-gray-500 mb-1 block">下一站地點</label>
+                      <input 
+                        className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white font-bold" 
+                        value={editData.nextLocation}
+                        onChange={(e) => setEditData({...editData, nextLocation: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 mb-1 block">地點補充說明 (選填)</label>
+                    <input 
+                      className="w-full p-2 border border-yellow-300 rounded-lg text-sm bg-white text-gray-500" 
+                      value={editData.nextDetail}
+                      onChange={(e) => setEditData({...editData, nextDetail: e.target.value})}
+                    />
+                  </div>
+                  
+                  <button 
+                    onClick={handleSaveToCloud}
+                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mt-2 flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all"
+                  >
+                    <Save size={20} className="mr-2" />
+                    發佈並同步給所有客戶
+                  </button>
                 </div>
               </div>
-              <ChevronRight size={20} className="text-gray-400" />
-            </div>
+            ) : (
+              /* --- 一般客戶觀看介面 --- */
+              <>
+                <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                  <div className="flex items-center">
+                    <div className="bg-orange-200 p-2 rounded-xl mr-4">
+                      <Bell size={20} className="text-orange-700" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-orange-800 font-bold mb-1">重要公告</div>
+                      <div className="text-sm text-gray-800 font-medium whitespace-pre-line">{appData.announcement}</div>
+                    </div>
+                  </div>
+                </div>
 
-            {/* 行程預覽區 */}
-            <div className="grid grid-cols-2 gap-4">
-               <div className="bg-blue-600 text-white p-5 rounded-2xl shadow-md">
-                 <div className="text-xs opacity-80 mb-2">目前行程</div>
-                 <div className="text-xl font-bold mb-1">出發前預覽</div>
-                 <div className="text-sm opacity-90">行程尚未開始</div>
-               </div>
-               <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
-                 <div className="text-xs text-gray-500 mb-2">下一個行程</div>
-                 <div className="text-2xl font-black text-gray-800 mb-1">9:45</div>
-                 <div className="text-sm font-bold text-gray-600">桃園機場集合</div>
-                 <div className="text-xs text-gray-400 mt-2 flex items-center">
-                    <MapPin size={12} className="mr-1" /> T2華航 團體報到櫃檯
-                 </div>
-               </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-600 text-white p-5 rounded-2xl shadow-md">
+                    <div className="text-xs opacity-80 mb-2">目前行程</div>
+                    <div className="text-xl font-bold mb-1">出發前預覽</div>
+                    <div className="text-sm opacity-90">行程尚未開始</div>
+                  </div>
+                  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
+                    <div className="text-xs text-gray-500 mb-2">下一個行程</div>
+                    <div className="text-2xl font-black text-gray-800 mb-1">{appData.nextTime}</div>
+                    <div className="text-sm font-bold text-gray-600">{appData.nextLocation}</div>
+                    {appData.nextDetail && (
+                      <div className="text-xs text-gray-400 mt-2 flex items-center">
+                        <MapPin size={12} className="mr-1" /> {appData.nextDetail}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
       case 'checklist':
@@ -84,7 +217,7 @@ export default function App() {
                 { id: '8', label: '展覽入場 QR Code' },
                 { id: '9', label: '個人藥品' }
               ].map((item) => (
-                <div key={item.id} onClick={() => toggleCheck(item.id)} className="flex items-center p-4 border-b border-gray-50 last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors">
+                <div key={item.id} onClick={() => toggleCheck(item.id)} className="flex items-center p-4 border-b border-gray-50 last:border-b-0 cursor-pointer active:bg-gray-50">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-colors ${checklist[item.id] ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
                     {checklist[item.id] && <CheckSquare size={14} className="text-white" />}
                   </div>
@@ -96,7 +229,7 @@ export default function App() {
         );
       case 'contact':
         return (
-          <div className="p-4 space-y-4 animate-in fade-in duration-300">
+          <div className="p-4 space-y-4 animate-in fade-in duration-300 flex flex-col h-[75vh]">
             <div className="bg-blue-600 text-white rounded-2xl shadow-md overflow-hidden">
               <div className="p-5 flex items-center border-b border-blue-500/50">
                 <div className="bg-white text-blue-600 rounded-full p-3 mr-4">
@@ -121,6 +254,17 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* 隱藏的主辦方管理入口 */}
+            <div className="mt-auto pt-10 pb-4 text-center">
+              <button 
+                onClick={handleAdminLogin}
+                className="text-gray-300 hover:text-gray-500 flex items-center justify-center w-full text-xs font-bold transition-colors"
+              >
+                <Settings size={14} className="mr-1" />
+                {isAdmin ? '登出管理模式' : '主辦方登入'}
+              </button>
+            </div>
           </div>
         );
       default:
@@ -137,6 +281,7 @@ export default function App() {
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-24 font-sans shadow-2xl relative">
       <div className="bg-white text-center py-4 border-b border-gray-100 shadow-sm sticky top-0 z-20 flex justify-center items-center">
         <div className="text-blue-700 font-black text-xl tracking-tight">FUTUREPNP</div>
+        {isAdmin && <span className="absolute right-4 text-[10px] bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold">編輯模式</span>}
       </div>
       
       {renderContent()}
