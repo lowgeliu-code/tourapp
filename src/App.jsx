@@ -124,7 +124,7 @@ itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updated
 };
 
 const removeEvent = (day, index) => {
-if(window.confirm('確定要刪除這個行程嗎？')){
+if(window.confirm(`確定要刪除 DAY ${dayNum} 及其所有行程嗎？`)){
 setEditData(prev => {
 const updatedEvents = [...prev.itinerary[day].events];
 updatedEvents.splice(index, 1);
