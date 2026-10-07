@@ -64,7 +64,7 @@ const defaultData = {
     },
     {
       id: 'driver_info',
-      title: "專車司青資訊",
+      title: "專車司機資訊",
       iconType: "car",
       name: "佐藤 先生 (Sato)",
       items: [
@@ -86,7 +86,6 @@ const defaultData = {
 };
 
 export default function App() {
-  // 1. 取得網址列中的 ?tour=參數，預設為 'default'
   const getUrlTourId = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('tour') || 'default';
@@ -103,10 +102,8 @@ export default function App() {
   const [editData, setEditData] = useState(defaultData);
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
-  // 彈跳視窗 Modal 狀態
   const [modalContent, setModalContent] = useState(null); 
 
-  // 背景滾動鎖定 (Background Scroll Lock)
   useEffect(() => {
     if (modalContent) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -119,7 +116,6 @@ export default function App() {
     }
   }, [modalContent]);
 
-  // 監聽並讀取所有已建立的行程列表
   useEffect(() => {
     const indexDocRef = doc(db, 'tourConfig', 'tourList');
     const unsubList = onSnapshot(indexDocRef, (snap) => {
@@ -132,9 +128,7 @@ export default function App() {
     return () => unsubList();
   }, []);
 
-  // 監聽當前行程資料
   useEffect(() => {
-    // 若為 default，優先檢查舊路徑向下相容
     const docPath = currentTourId === 'default' ? ['tourConfig', 'mainContent'] : ['tours', currentTourId];
     const docRef = doc(db, docPath[0], docPath[1]);
 
@@ -151,7 +145,6 @@ export default function App() {
         setAppData(mergedData);
         setEditData(mergedData); 
       } else {
-        // 全新行程初始化預設骨架
         const initialData = {
           ...defaultData,
           eventTitle: currentTourId === 'default' ? defaultData.eventTitle : `新考察行程 (${currentTourId})`
@@ -162,7 +155,6 @@ export default function App() {
     return () => unsubscribe();
   }, [currentTourId]);
 
-  // 切換行程
   const handleSwitchTour = (newTourId) => {
     setCurrentTourId(newTourId);
     const url = new URL(window.location);
@@ -174,7 +166,6 @@ export default function App() {
     window.history.pushState({}, '', url);
   };
 
-  // 建立全新行程
   const handleCreateNewTour = async () => {
     const newId = prompt("請輸入新行程專屬代碼（限英文與數字，例如：ces-2027）：");
     if (!newId) return;
@@ -200,9 +191,7 @@ export default function App() {
     };
 
     try {
-      // 寫入新行程文件
       await setDoc(doc(db, 'tours', cleanId), newTourData);
-      // 更新行程索引清單
       const updatedList = Array.from(new Set([...availableTours, cleanId]));
       await setDoc(doc(db, 'tourConfig', 'tourList'), { list: updatedList });
 
@@ -214,14 +203,12 @@ export default function App() {
     }
   };
 
-  // 複製當前專屬網址
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 本地 Checklist 快取（加上 tourId 隔離，不同行程互不干擾）
   const [userChecklist, setUserChecklist] = useState({});
 
   useEffect(() => {
@@ -241,7 +228,6 @@ export default function App() {
     });
   };
 
-  // 儲存至雲端
   const handleSaveToCloud = async () => {
     try {
       const docPath = currentTourId === 'default' ? ['tourConfig', 'mainContent'] : ['tours', currentTourId];
@@ -319,7 +305,6 @@ export default function App() {
     });
   };
 
-  // 本地端極速高畫質等比例壓縮
   const compressImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -707,13 +692,19 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            <div className="sticky top-14 z-50 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1">
+            {/* 修復：加入 overflow-x-auto, max-w-full 與 橫向滑動樣式，確保 D-7 絕不突出版面 */}
+            <div className="sticky top-14 z-40 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1 overflow-x-auto max-w-full scrollbar-none">
               {Object.keys(displayData?.itinerary || {}).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
                 const dayInfo = displayData?.itinerary?.[dayNum] || {};
                 return (
                   <div key={dayNum} className="relative group shrink-0">
-                    <button onClick={() => setSelectedDay(dayNum)} className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono focus:outline-none focus:ring-0 ${selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white border border-gray-200'}`}>
+                    <button 
+                      onClick={() => setSelectedDay(dayNum)} 
+                      className={`flex flex-col items-center py-1 px-2.5 rounded transition-all font-mono focus:outline-none focus:ring-0 shrink-0 ${
+                        selectedDay === dayNum ? 'bg-[#1E293B] text-white shadow' : 'text-[#475569] hover:text-[#0F172A] bg-white border border-gray-200'
+                      }`}
+                    >
                       <span className="text-[8px] opacity-80">D-{dayNum}</span>
                       {isAdmin ? (
                         <div className="space-y-0.5 text-center">
@@ -796,7 +787,7 @@ export default function App() {
                             <button onClick={() => moveEvent(selectedDay, idx, 'up')} disabled={idx === 0} title="往上移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30 border-r border-gray-300">
                               <ArrowUp size={13} />
                             </button>
-                            <button onClick={() => moveEvent(selectedDay, idx, 'down')} disabled={idx === currentDay.events.length - 1} title="往下移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30">
+                            <button onClick={() => moveEvent(selectedDay, idx)} disabled={idx === currentDay.events.length - 1} title="往下移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30">
                               <ArrowDown size={13} />
                             </button>
                           </div>
@@ -830,7 +821,6 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev?.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
-                                {/* 附件列表 */}
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">附件列表：</div>
                                   {(ev?.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
@@ -857,7 +847,6 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* 本地極速優化圖片上傳 */}
                                 <div className="space-y-1.5 pt-2 border-t border-gray-200">
                                   <div className="text-[10px] font-bold text-[#2563EB]">路線圖 / 照片 (點擊直接選取手機或電腦圖片)：</div>
                                   {(ev?.files || []).map((file, fIdx) => (
@@ -888,7 +877,6 @@ export default function App() {
                                   </label>
                                 </div>
 
-                                {/* 路線/文字筆記 */}
                                 <div className="space-y-2 pt-2 border-t border-gray-200">
                                   <div className="text-[10px] font-bold text-[#2563EB]">路線引導 / 文字筆記：</div>
                                   {(ev?.notes || []).map((note, noteIdx) => (
@@ -975,7 +963,6 @@ export default function App() {
                             </a>
                           )}
                           
-                          {/* 報告/附件按鈕 */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <button 
                               key={i} 
@@ -986,7 +973,6 @@ export default function App() {
                             </button>
                           ) : null)}
 
-                          {/* 路線圖片按鈕 */}
                           {ev?.files && ev.files.map((file, i) => file?.url ? (
                             <button 
                               key={i} 
@@ -997,7 +983,6 @@ export default function App() {
                             </button>
                           ) : null)}
 
-                          {/* 路線文字筆記按鈕 */}
                           {ev?.notes && ev.notes.map((note, i) => note?.title ? (
                             <button 
                               key={i} 
@@ -1193,7 +1178,6 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
-      {/* 頂部導覽列：管理員模式提供行程切換、複製網址與新增行程 */}
       <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5">
         <div className="flex justify-between items-center">
           <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
@@ -1212,7 +1196,6 @@ export default function App() {
           )}
         </div>
 
-        {/* 管理員專屬：行程切換控制列 */}
         {isAdmin && (
           <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1.5 font-mono text-[11px]">
             <span className="text-gray-500 font-bold shrink-0">行程切換:</span>
@@ -1258,7 +1241,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 彈跳視窗 Modal (背景滾動鎖定) */}
       {modalContent && (
         <div 
           className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200 overscroll-contain"
