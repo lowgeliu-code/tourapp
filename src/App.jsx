@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -28,8 +28,9 @@ const defaultData = {
   itinerary: {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
       { 
-        time: "9:45", endTime: "", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
+        time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "展覽手冊", url: "" }],
+        files: [{ name: "行程說明圖檔", url: "" }],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
         researchQA: "Q: 行李超重限制為何？\nA: 經濟艙託運行李為23公斤。"
@@ -90,8 +91,7 @@ export default function App() {
   const [appData, setAppData] = useState(defaultData);
   const [editData, setEditData] = useState(defaultData);
 
-  // 彈跳視窗 Modal 狀態
-  const [modalContent, setModalContent] = useState(null); // { eventTitle: "", title: "", text: "" }
+  const [modalContent, setModalContent] = useState(null);
 
   useEffect(() => {
     const docRef = doc(db, 'tourConfig', 'mainContent');
@@ -168,6 +168,7 @@ export default function App() {
     });
   };
 
+  // 附件網址管理
   const handleAttachmentChange = (day, eventIndex, attIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
@@ -209,12 +210,82 @@ export default function App() {
     });
   };
 
+  // 檔案/圖片夾帶管理
+  const handleFileChange = (day, eventIndex, fileIndex, field, value) => {
+    setEditData(prev => {
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const files = [...(currentEv?.files || [])];
+      files[fileIndex] = { ...(files[fileIndex] || {}), [field]: value };
+      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
+  const addFile = (day, eventIndex) => {
+    setEditData(prev => {
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const files = [...(currentEv?.files || []), { name: "", url: "" }];
+      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
+  const removeFile = (day, eventIndex, fileIndex) => {
+    setEditData(prev => {
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const files = [...(currentEv?.files || [])];
+      files.splice(fileIndex, 1);
+      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
+  // 智慧時間計算：新行程開始時間 = 上一個行程結束時間 + 30分鐘；結束時間 = 開始時間 + 1小時
   const addEvent = (day) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      let newStartTime = "12:00";
+      let newEndTime = "13:00";
+
+      if (updatedEvents.length > 0) {
+        const lastEvent = updatedEvents[updatedEvents.length - 1];
+        const baseTimeStr = lastEvent.endTime || lastEvent.time || "12:00";
+        const parts = baseTimeStr.split(':');
+        if (parts.length === 2) {
+          let h = parseInt(parts[0], 10);
+          let m = parseInt(parts[1], 10) + 30; // 加 30 分鐘
+          if (m >= 60) {
+            h += 1;
+            m -= 60;
+          }
+          if (h >= 24) h = 23;
+          const startHStr = String(h).padStart(2, '0');
+          const startMStr = String(m).padStart(2, '0');
+          newStartTime = `${startHStr}:${startMStr}`;
+
+          // 結束時間 = 開始時間 + 1 小時
+          let endH = h + 1;
+          if (endH >= 24) endH = 23;
+          const endHStr = String(endH).padStart(2, '0');
+          newEndTime = `${endHStr}:${startMStr}`;
+        }
+      }
+
       updatedEvents.push({ 
-        time: "12:00", endTime: "", icon: "activity", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", 
-        attachments: [{ name: "", url: "" }], showResearch: false, researchPoint: "", researchQA: "" 
+        time: newStartTime, endTime: newEndTime, icon: "activity", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", 
+        attachments: [{ name: "", url: "" }], files: [], showResearch: false, researchPoint: "", researchQA: "" 
       });
       return {
         ...prev,
@@ -574,6 +645,7 @@ export default function App() {
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev?.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
                                 
+                                {/* 附件列表 */}
                                 <div className="space-y-1 pt-1">
                                   <div className="text-[10px] font-bold text-[#2563EB]">附件列表：</div>
                                   {(ev?.attachments || [{ name: "", url: "" }]).map((att, attIdx) => (
@@ -597,6 +669,33 @@ export default function App() {
                                   ))}
                                   <button onClick={() => addAttachment(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
                                     + 新增附件
+                                  </button>
+                                </div>
+
+                                {/* 檔案 / 圖片夾帶列表 */}
+                                <div className="space-y-1 pt-1">
+                                  <div className="text-[10px] font-bold text-[#2563EB]">夾帶檔案 / 圖片：</div>
+                                  {(ev?.files || []).map((file, fIdx) => (
+                                    <div key={fIdx} className="flex items-center gap-1">
+                                      <input 
+                                        className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
+                                        value={file?.name || ""} 
+                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'name', e.target.value)} 
+                                        placeholder="檔案名稱 (如圖片)" 
+                                      />
+                                      <input 
+                                        className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
+                                        value={file?.url || ""} 
+                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'url', e.target.value)} 
+                                        placeholder="檔案/圖片連結" 
+                                      />
+                                      <button onClick={() => removeFile(selectedDay, idx, fIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button onClick={() => addFile(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
+                                    + 夾帶檔案/圖片
                                   </button>
                                 </div>
 
@@ -656,13 +755,20 @@ export default function App() {
                               <MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps
                             </a>
                           )}
+                          {/* 網址附件 */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <a key={i} href={att.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
                               <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> {att.name || `附件 ${i + 1}`}
                             </a>
                           ) : null)}
 
-                          {/* 點擊後彈出視窗，標題帶有該行程名稱 (例如：展覽攤位A - 📌 研究重點摘要) */}
+                          {/* 夾帶檔案/圖片 */}
+                          {ev?.files && ev.files.map((file, i) => file?.url ? (
+                            <a key={i} href={file.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors border border-blue-200">
+                              <ImageIcon size={11} className="mr-1 text-[#2563EB]" /> {file.name || `檔案 ${i + 1}`}
+                            </a>
+                          ) : null)}
+
                           {ev?.showResearch && ev?.researchPoint && (
                             <button 
                               onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: "📌 研究重點摘要", text: ev.researchPoint })}
@@ -868,7 +974,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 彈跳視窗 Modal (標題左上角自動帶入行程名稱，防止點錯) */}
       {modalContent && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 space-y-4 font-mono relative">
