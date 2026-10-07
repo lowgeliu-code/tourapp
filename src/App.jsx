@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload, Loader2
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload, Loader2, Copy, Check
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAzO6RTxbdgy1eOUJzWVXa10BD09TBZYCc",
@@ -64,7 +64,7 @@ const defaultData = {
     },
     {
       id: 'driver_info',
-      title: "專車司機資訊",
+      title: "專車司青資訊",
       iconType: "car",
       name: "佐藤 先生 (Sato)",
       items: [
@@ -86,6 +86,16 @@ const defaultData = {
 };
 
 export default function App() {
+  // 1. 取得網址列中的 ?tour=參數，預設為 'default'
+  const getUrlTourId = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tour') || 'default';
+  };
+
+  const [currentTourId, setCurrentTourId] = useState(getUrlTourId);
+  const [availableTours, setAvailableTours] = useState(['default']);
+  const [copied, setCopied] = useState(false);
+
   const [activeTab, setActiveTab] = useState('itinerary');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
@@ -96,12 +106,12 @@ export default function App() {
   // 彈跳視窗 Modal 狀態
   const [modalContent, setModalContent] = useState(null); 
 
-  // 背景滾動鎖定 (Background Scroll Lock)：彈窗開啟時禁止背景滑動
+  // 背景滾動鎖定 (Background Scroll Lock)
   useEffect(() => {
     if (modalContent) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
       document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none'; // 針對行動裝置禁止手勢穿透
+      document.body.style.touchAction = 'none';
       return () => {
         document.body.style.overflow = originalStyle;
         document.body.style.touchAction = 'auto';
@@ -109,8 +119,25 @@ export default function App() {
     }
   }, [modalContent]);
 
+  // 監聽並讀取所有已建立的行程列表
   useEffect(() => {
-    const docRef = doc(db, 'tourConfig', 'mainContent');
+    const indexDocRef = doc(db, 'tourConfig', 'tourList');
+    const unsubList = onSnapshot(indexDocRef, (snap) => {
+      if (snap.exists() && snap.data().list) {
+        setAvailableTours(snap.data().list);
+      } else {
+        setDoc(indexDocRef, { list: ['default'] });
+      }
+    });
+    return () => unsubList();
+  }, []);
+
+  // 監聽當前行程資料
+  useEffect(() => {
+    // 若為 default，優先檢查舊路徑向下相容
+    const docPath = currentTourId === 'default' ? ['tourConfig', 'mainContent'] : ['tours', currentTourId];
+    const docRef = doc(db, docPath[0], docPath[1]);
+
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const serverData = docSnap.data();
@@ -124,36 +151,103 @@ export default function App() {
         setAppData(mergedData);
         setEditData(mergedData); 
       } else {
-        setDoc(docRef, defaultData);
+        // 全新行程初始化預設骨架
+        const initialData = {
+          ...defaultData,
+          eventTitle: currentTourId === 'default' ? defaultData.eventTitle : `新考察行程 (${currentTourId})`
+        };
+        setDoc(docRef, initialData);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentTourId]);
 
-  const [userChecklist, setUserChecklist] = useState(() => {
-    try {
-      const saved = localStorage.getItem('tour_user_checklist');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      return {};
+  // 切換行程
+  const handleSwitchTour = (newTourId) => {
+    setCurrentTourId(newTourId);
+    const url = new URL(window.location);
+    if (newTourId === 'default') {
+      url.searchParams.delete('tour');
+    } else {
+      url.searchParams.set('tour', newTourId);
     }
-  });
+    window.history.pushState({}, '', url);
+  };
+
+  // 建立全新行程
+  const handleCreateNewTour = async () => {
+    const newId = prompt("請輸入新行程專屬代碼（限英文與數字，例如：ces-2027）：");
+    if (!newId) return;
+
+    const cleanId = newId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (!cleanId) {
+      alert("請輸入有效的英文/數字代碼！");
+      return;
+    }
+
+    if (availableTours.includes(cleanId)) {
+      alert("此行程代碼已存在，為您切換至該行程。");
+      handleSwitchTour(cleanId);
+      return;
+    }
+
+    const title = prompt("請輸入此行程大標題（例如：2027 美國 CES 科技考察）：", "新考察行程");
+
+    const newTourData = {
+      ...defaultData,
+      eventTitle: title || "新考察行程",
+      brandName: appData.brandName || "Lowge securities"
+    };
+
+    try {
+      // 寫入新行程文件
+      await setDoc(doc(db, 'tours', cleanId), newTourData);
+      // 更新行程索引清單
+      const updatedList = Array.from(new Set([...availableTours, cleanId]));
+      await setDoc(doc(db, 'tourConfig', 'tourList'), { list: updatedList });
+
+      handleSwitchTour(cleanId);
+      alert(`✅ 行程「${cleanId}」建立成功並已切換！`);
+    } catch (e) {
+      console.error(e);
+      alert("建立失敗，請檢查網路連線。");
+    }
+  };
+
+  // 複製當前專屬網址
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // 本地 Checklist 快取（加上 tourId 隔離，不同行程互不干擾）
+  const [userChecklist, setUserChecklist] = useState({});
 
   useEffect(() => {
     try {
-      localStorage.setItem('tour_user_checklist', JSON.stringify(userChecklist));
-    } catch (e) {}
-  }, [userChecklist]);
+      const saved = localStorage.getItem(`tour_checklist_${currentTourId}`);
+      setUserChecklist(saved ? JSON.parse(saved) : {});
+    } catch (e) {
+      setUserChecklist({});
+    }
+  }, [currentTourId]);
 
   const toggleCheck = (id) => {
-    setUserChecklist(prev => ({ ...prev, [id]: !prev[id] }));
+    setUserChecklist(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      localStorage.setItem(`tour_checklist_${currentTourId}`, JSON.stringify(next));
+      return next;
+    });
   };
 
+  // 儲存至雲端
   const handleSaveToCloud = async () => {
     try {
-      await setDoc(doc(db, 'tourConfig', 'mainContent'), editData);
+      const docPath = currentTourId === 'default' ? ['tourConfig', 'mainContent'] : ['tours', currentTourId];
+      await setDoc(doc(db, docPath[0], docPath[1]), editData);
       setIsAdmin(false);
-      alert('【Institutional System】數據已成功同步至全體終端。');
+      alert(`【Institutional System】「${currentTourId}」行程數據已成功同步至全體終端。`);
     } catch (error) {
       alert('更新失敗，請檢查網路連線。');
     }
@@ -565,8 +659,9 @@ export default function App() {
           <div className="p-4 animate-in fade-in duration-300 pb-20">
             {isAdmin && (
               <div className="bg-[#F8FAFC] border-2 border-[#2563EB] p-4 rounded mb-6 shadow-sm space-y-3 font-mono">
-                <div className="text-xs font-bold text-[#1E293B] border-b border-gray-200 pb-2 flex items-center">
-                  <Edit3 size={16} className="mr-1.5 text-[#2563EB]" /> 🔧 管理員：展會基本資訊設定
+                <div className="text-xs font-bold text-[#1E293B] border-b border-gray-200 pb-2 flex items-center justify-between">
+                  <span className="flex items-center"><Edit3 size={16} className="mr-1.5 text-[#2563EB]" /> 🔧 管理員：展會基本資訊設定</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">目前行程代碼: {currentTourId}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -1098,11 +1193,56 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
-      <div className="bg-white text-center py-3.5 border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 flex justify-center items-center px-4">
-        <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
-          <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData?.brandName}
+      {/* 頂部導覽列：管理員模式提供行程切換、複製網址與新增行程 */}
+      <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5">
+        <div className="flex justify-between items-center">
+          <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
+            <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData?.brandName}
+          </div>
+          {isAdmin ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] bg-[#2563EB] text-white px-2 py-0.5 rounded font-mono font-bold tracking-widest">ADMIN</span>
+            </div>
+          ) : (
+            currentTourId !== 'default' && (
+              <span className="text-[9px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono font-bold border">
+                {currentTourId}
+              </span>
+            )
+          )}
         </div>
-        {isAdmin && <span className="absolute right-4 text-[9px] bg-[#2563EB] text-white px-2 py-0.5 rounded font-mono font-bold tracking-widest">ADMIN</span>}
+
+        {/* 管理員專屬：行程切換控制列 */}
+        {isAdmin && (
+          <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1.5 font-mono text-[11px]">
+            <span className="text-gray-500 font-bold shrink-0">行程切換:</span>
+            <select 
+              className="flex-1 bg-gray-50 border border-gray-300 rounded px-1.5 py-1 text-[11px] font-bold text-[#0F172A]"
+              value={currentTourId}
+              onChange={(e) => handleSwitchTour(e.target.value)}
+            >
+              {availableTours.map((t) => (
+                <option key={t} value={t}>
+                  {t === 'default' ? 'default (預設 Semicon JP)' : t}
+                </option>
+              ))}
+            </select>
+            <button 
+              onClick={handleCreateNewTour} 
+              title="建立全新行程空間"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1 rounded text-[10px] shrink-0 shadow-sm"
+            >
+              + 新增
+            </button>
+            <button 
+              onClick={handleCopyLink} 
+              title="複製此行程專屬分享網址"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded border border-gray-300 shrink-0 flex items-center"
+            >
+              {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+            </button>
+          </div>
+        )}
       </div>
       
       {renderContent()}
@@ -1118,16 +1258,14 @@ export default function App() {
         </div>
       )}
 
-      {/* 彈跳視窗 Modal (加入 overscroll-contain 與 背景鎖定，防止滑動穿透) */}
+      {/* 彈跳視窗 Modal (背景滾動鎖定) */}
       {modalContent && (
         <div 
           className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200 overscroll-contain"
           onClick={(e) => {
-            // 點擊暗色背景可關閉視窗
             if (e.target === e.currentTarget) setModalContent(null);
           }}
           onTouchMove={(e) => {
-            // 如果觸摸的是最外層遮罩，直接阻止滑動行為
             if (e.target === e.currentTarget) e.preventDefault();
           }}
         >
@@ -1148,10 +1286,8 @@ export default function App() {
               </button>
             </div>
             
-            {/* 視窗內部滾動區：設定 overscroll-contain 防止滑動傳遞給背景 */}
             <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
               {modalContent.webUrl ? (
-                /* 網頁/報告內嵌模式 */
                 <div className="h-[62vh] flex flex-col space-y-2">
                   <iframe 
                     src={modalContent.webUrl} 
@@ -1171,13 +1307,11 @@ export default function App() {
                   </div>
                 </div>
               ) : modalContent.imageUrl ? (
-                /* 路線大圖模式 */
                 <div className="text-center space-y-2 py-2">
                   <img src={modalContent.imageUrl} alt="路線引導圖" className="w-full rounded-lg shadow-md mx-auto object-contain bg-white" />
                   <div className="text-[10px] text-gray-400">💡 可於視窗中自由查看清晰路線細節</div>
                 </div>
               ) : (
-                /* 文字與 QA 模式 */
                 <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-200">
                   {modalContent.text}
                 </div>
