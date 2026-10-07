@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, FileCode
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload, Loader2
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -19,6 +19,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// 免費匿名 Imgur Client ID (專用於圖片上傳)
+const IMGUR_CLIENT_ID = "279b9b5f492b45e";
+
 const defaultData = {
   brandName: "Lowge securities",
   eventTitle: "12月Semicon JP",
@@ -30,7 +33,8 @@ const defaultData = {
       { 
         time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "展覽手冊", url: "" }],
-        notes: [{ title: "參訪重點筆記", content: "現場可自由拍照，請留意高壓設備。\n(可於此貼上圖片網址或詳細筆記內容)" }],
+        files: [],
+        notes: [{ title: "參訪重點筆記", content: "現場可自由拍照，請留意高壓設備。" }],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
         researchQA: "Q: 行李超重限制為何？\nA: 經濟艙託運行李為23公斤。"
@@ -90,6 +94,7 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(1);
   const [appData, setAppData] = useState(defaultData);
   const [editData, setEditData] = useState(defaultData);
+  const [uploadingIndex, setUploadingIndex] = useState(null);
 
   const [modalContent, setModalContent] = useState(null);
 
@@ -209,7 +214,64 @@ export default function App() {
     });
   };
 
-  // Note 筆記本管理
+  // 自動化免費圖片上傳 (透過 Imgur API，不需要手動轉網址)
+  const handleFileUpload = async (day, eventIndex, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploadingIndex(eventIndex);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: {
+          Authorization: `Client-ID ${IMGUR_CLIENT_ID}`
+        },
+        body: formData
+      });
+
+      const resData = await response.json();
+
+      if (resData.success) {
+        const downloadUrl = resData.data.link;
+        setEditData(prev => {
+          const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+          const currentEv = updatedEvents[eventIndex] || {};
+          const files = [...(currentEv?.files || []), { name: file.name, url: downloadUrl }];
+          updatedEvents[eventIndex] = { ...currentEv, files: files };
+          return {
+            ...prev,
+            itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+          };
+        });
+        alert(`✅ 圖片「${file.name}」已自動上傳完成！`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('上傳失敗，請檢查網路連線或稍後再試。');
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  const removeFile = (day, eventIndex, fileIndex) => {
+    setEditData(prev => {
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const files = [...(currentEv?.files || [])];
+      files.splice(fileIndex, 1);
+      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
   const handleNoteChange = (day, eventIndex, noteIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
@@ -228,7 +290,7 @@ export default function App() {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const notes = [...(currentEv?.notes || []), { title: "筆記標題", content: "" }];
+      const notes = [...(currentEv?.notes || []), { title: "路線指引說明", content: "" }];
       updatedEvents[eventIndex] = { ...currentEv, notes: notes };
       return {
         ...prev,
@@ -282,7 +344,7 @@ export default function App() {
 
       updatedEvents.push({ 
         time: newStartTime, endTime: newEndTime, icon: "activity", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", 
-        attachments: [{ name: "", url: "" }], notes: [], showResearch: false, researchPoint: "", researchQA: "" 
+        attachments: [{ name: "", url: "" }], files: [], notes: [], showResearch: false, researchPoint: "", researchQA: "" 
       });
       return {
         ...prev,
@@ -669,9 +731,40 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* Note 筆記本管理 (支援圖片貼上與文字) */}
+                                {/* 免費圖片自動上傳 (免註冊、不需綁信用卡、直覺點選手機照片) */}
+                                <div className="space-y-1.5 pt-2 border-t border-gray-200">
+                                  <div className="text-[10px] font-bold text-[#2563EB]">路線圖 / 照片 (點擊直接選取手機或電腦圖片)：</div>
+                                  {(ev?.files || []).map((file, fIdx) => (
+                                    <div key={fIdx} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1 text-[10px]">
+                                      <span className="font-bold truncate max-w-[180px]">🖼️ {file.name}</span>
+                                      <button onClick={() => removeFile(selectedDay, idx, fIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <label className="inline-flex items-center text-[10px] font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition-all">
+                                    {uploadingIndex === idx ? (
+                                      <>
+                                        <Loader2 size={12} className="mr-1.5 animate-spin" /> 自動上傳中...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload size={12} className="mr-1.5" /> ＋ 選擇圖片自動上傳
+                                      </>
+                                    )}
+                                    <input 
+                                      type="file" 
+                                      accept="image/*"
+                                      className="hidden" 
+                                      disabled={uploadingIndex !== null}
+                                      onChange={(e) => handleFileUpload(selectedDay, idx, e)} 
+                                    />
+                                  </label>
+                                </div>
+
+                                {/* 路線/文字筆記 */}
                                 <div className="space-y-2 pt-2 border-t border-gray-200">
-                                  <div className="text-[10px] font-bold text-[#2563EB]">Note 筆記本 (可貼上圖片網址與詳細說明)：</div>
+                                  <div className="text-[10px] font-bold text-[#2563EB]">路線引導 / 文字筆記：</div>
                                   {(ev?.notes || []).map((note, noteIdx) => (
                                     <div key={noteIdx} className="bg-[#F8FAFC] p-2.5 rounded border border-gray-200 space-y-1.5">
                                       <div className="flex items-center gap-1">
@@ -679,7 +772,7 @@ export default function App() {
                                           className="flex-1 text-[11px] font-bold border border-gray-300 rounded px-1.5 py-0.5 bg-white text-[#0F172A]" 
                                           value={note?.title || ""} 
                                           onChange={(e) => handleNoteChange(selectedDay, idx, noteIdx, 'title', e.target.value)} 
-                                          placeholder="筆記按鈕名稱 (例如: 參訪筆記)" 
+                                          placeholder="按鈕名稱 (例如: 路線引導)" 
                                         />
                                         <button onClick={() => removeNote(selectedDay, idx, noteIdx)} className="text-red-600 p-1 bg-red-50 rounded">
                                           <Trash2 size={12} />
@@ -690,12 +783,12 @@ export default function App() {
                                         rows="3"
                                         value={note?.content || ""} 
                                         onChange={(e) => handleNoteChange(selectedDay, idx, noteIdx, 'content', e.target.value)} 
-                                        placeholder="輸入文字筆記，或貼上圖片網址 (https://...)" 
+                                        placeholder="輸入文字路線指引說明..." 
                                       />
                                     </div>
                                   ))}
                                   <button onClick={() => addNote(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-1 rounded border border-blue-200 border-dashed mt-1">
-                                    + 新增 Note 筆記
+                                    + 新增路線筆記
                                   </button>
                                 </div>
 
@@ -761,14 +854,25 @@ export default function App() {
                             </a>
                           ) : null)}
 
-                          {/* 讀取模式：顯示 Note 筆記按鈕 */}
+                          {/* 讀取模式：點擊直接放大預覽路線引導圖 */}
+                          {ev?.files && ev.files.map((file, i) => file?.url ? (
+                            <button 
+                              key={i} 
+                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: `🖼️ ${file.name || '路線引導圖'}`, imageUrl: file.url })}
+                              className="flex items-center text-[10px] font-bold text-[#1E293B] bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors border border-blue-200"
+                            >
+                              <ImageIcon size={11} className="mr-1 text-[#2563EB]" /> {file.name || `路線圖 ${i + 1}`}
+                            </button>
+                          ) : null)}
+
+                          {/* 路線文字筆記按鈕 */}
                           {ev?.notes && ev.notes.map((note, i) => note?.title ? (
                             <button 
                               key={i}
-                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: `📝 ${note.title}`, text: note.content })}
+                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: `🗺️ ${note.title}`, text: note.content })}
                               className="flex items-center text-[10px] font-bold text-white bg-slate-700 hover:bg-slate-800 px-3 py-1 rounded-lg shadow-sm transition-all"
                             >
-                              📝 {note.title}
+                              🗺️ {note.title}
                             </button>
                           ) : null)}
 
@@ -977,6 +1081,7 @@ export default function App() {
         </div>
       )}
 
+      {/* 彈跳視窗 Modal (支援圖片與文字路線指引) */}
       {modalContent && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 space-y-4 font-mono relative">
@@ -991,12 +1096,11 @@ export default function App() {
               <div className="text-base font-black text-[#0F172A] border-b pb-2">{modalContent.title}</div>
             </div>
             
-            {/* 彈跳視窗內容：自動判斷並支援圖片顯示與文字換行 */}
-            <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed max-h-72 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-3">
-              {modalContent.text && modalContent.text.startsWith('http') ? (
+            <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed max-h-80 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-3">
+              {modalContent.imageUrl ? (
                 <div className="text-center">
-                  <img src={modalContent.text} alt="筆記圖片" className="max-w-full rounded-lg shadow-md mx-auto" />
-                  <a href={modalContent.text} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 underline mt-2 block">檢視原圖連結</a>
+                  <img src={modalContent.imageUrl} alt="路線引導圖" className="max-w-full rounded-lg shadow-md mx-auto object-contain" />
+                  <a href={modalContent.imageUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 underline mt-2 block">點此檢視原圖高清大圖</a>
                 </div>
               ) : (
                 <div>{modalContent.text}</div>
