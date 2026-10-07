@@ -29,7 +29,7 @@ const defaultData = {
     1: { date: "9/29", weekday: "週二", title: "抵達日本・入住飯店", events: [
       { 
         time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
-        attachments: [{ name: "展覽手冊", url: "" }],
+        attachments: [{ name: "報告連結", url: "https://da.gd/5wcJnH" }],
         files: [],
         notes: [{ title: "路線指引說明", content: "請前往27樓接待處，並告知預約編號：001398。" }],
         showResearch: true,
@@ -93,7 +93,8 @@ export default function App() {
   const [editData, setEditData] = useState(defaultData);
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
-  const [modalContent, setModalContent] = useState(null);
+  // 彈跳視窗 Modal 狀態（支援文字、圖片與網頁報告內嵌 Iframe）
+  const [modalContent, setModalContent] = useState(null); 
 
   useEffect(() => {
     const docRef = doc(db, 'tourConfig', 'mainContent');
@@ -211,7 +212,7 @@ export default function App() {
     });
   };
 
-  // 本地端極速高畫質等比例壓縮（無須伺服器、保證小於 100KB、完全無跨域錯誤）
+  // 本地端極速高畫質等比例壓縮
   const compressImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -221,7 +222,7 @@ export default function App() {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDimension = 1200; // 高清足以辨識文字與箭頭
+          const maxDimension = 1200;
 
           if (width > maxDimension || height > maxDimension) {
             if (width > height) {
@@ -748,7 +749,7 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* 本地極速優化圖片上傳 (點擊直接選取相簿/照片) */}
+                                {/* 本地極速優化圖片上傳 */}
                                 <div className="space-y-1.5 pt-2 border-t border-gray-200">
                                   <div className="text-[10px] font-bold text-[#2563EB]">路線圖 / 照片 (點擊直接選取手機或電腦圖片)：</div>
                                   {(ev?.files || []).map((file, fIdx) => (
@@ -865,13 +866,19 @@ export default function App() {
                               <MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps
                             </a>
                           )}
+                          
+                          {/* 報告/附件按鈕：在 App 內彈出預覽視窗，不跳出 LINE */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
-                            <a key={i} href={att.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
+                            <button 
+                              key={i} 
+                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: `📄 ${att.name || '報告連結'}`, webUrl: att.url })}
+                              className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors"
+                            >
                               <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> {att.name || `附件 ${i + 1}`}
-                            </a>
+                            </button>
                           ) : null)}
 
-                          {/* 點擊直接彈出高清路線圖 */}
+                          {/* 路線圖片按鈕 */}
                           {ev?.files && ev.files.map((file, i) => file?.url ? (
                             <button 
                               key={i} 
@@ -885,7 +892,7 @@ export default function App() {
                           {/* 路線文字筆記按鈕 */}
                           {ev?.notes && ev.notes.map((note, i) => note?.title ? (
                             <button 
-                              key={i}
+                              key={i} 
                               onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: `🗺️ ${note.title}`, text: note.content })}
                               className="flex items-center text-[10px] font-bold text-white bg-slate-700 hover:bg-slate-800 px-3 py-1 rounded-lg shadow-sm transition-all"
                             >
@@ -1098,37 +1105,63 @@ export default function App() {
         </div>
       )}
 
-      {/* 彈跳視窗 Modal (支援放大檢視路線引導圖與文字指引) */}
+      {/* 彈跳視窗 Modal (支援：In-App 內嵌網頁預覽、路線大圖、研究文字) */}
       {modalContent && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-gray-100 space-y-4 font-mono relative">
-            <button 
-              onClick={() => setModalContent(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 bg-gray-100 rounded-full"
-            >
-              <X size={16} />
-            </button>
-            <div>
-              <div className="text-xs font-bold text-[#2563EB] mb-1">📍 {modalContent.eventTitle}</div>
-              <div className="text-base font-black text-[#0F172A] border-b pb-2">{modalContent.title}</div>
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-gray-100 space-y-3 font-mono relative flex flex-col max-h-[88vh]">
+            <div className="flex justify-between items-start border-b pb-2">
+              <div className="pr-6">
+                <div className="text-xs font-bold text-[#2563EB] mb-0.5">📍 {modalContent.eventTitle}</div>
+                <div className="text-sm font-black text-[#0F172A] truncate max-w-[260px]">{modalContent.title}</div>
+              </div>
+              <button 
+                onClick={() => setModalContent(null)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 bg-gray-100 rounded-full shrink-0"
+              >
+                <X size={16} />
+              </button>
             </div>
             
-            <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed max-h-[70vh] overflow-y-auto bg-gray-50 p-2 rounded-xl border border-gray-200 space-y-3">
-              {modalContent.imageUrl ? (
-                <div className="text-center space-y-2">
+            <div className="flex-1 overflow-y-auto">
+              {modalContent.webUrl ? (
+                /* 網頁/報告內嵌模式：完全不跳出 LINE，一鍵關閉返回行程 */
+                <div className="h-[62vh] flex flex-col space-y-2">
+                  <iframe 
+                    src={modalContent.webUrl} 
+                    title="報告預覽" 
+                    className="w-full flex-1 border border-gray-200 rounded-lg shadow-inner bg-white"
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1">
+                    <span>💡 若內容無法載入，可點右側：</span>
+                    <a 
+                      href={modalContent.webUrl} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-blue-600 underline font-bold flex items-center"
+                    >
+                      於新視窗開啟 <ExternalLink size={10} className="ml-0.5" />
+                    </a>
+                  </div>
+                </div>
+              ) : modalContent.imageUrl ? (
+                /* 路線大圖模式 */
+                <div className="text-center space-y-2 py-2">
                   <img src={modalContent.imageUrl} alt="路線引導圖" className="w-full rounded-lg shadow-md mx-auto object-contain bg-white" />
-                  <div className="text-[10px] text-gray-400">💡 可用雙指縮放或在彈出視窗中自由查看清晰細節</div>
+                  <div className="text-[10px] text-gray-400">💡 可於視窗中自由查看清晰路線細節</div>
                 </div>
               ) : (
-                <div>{modalContent.text}</div>
+                /* 文字與 QA 模式 */
+                <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-200">
+                  {modalContent.text}
+                </div>
               )}
             </div>
 
             <button 
               onClick={() => setModalContent(null)}
-              className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-2.5 rounded-xl text-xs transition-colors"
+              className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-2.5 rounded-xl text-xs transition-colors shrink-0"
             >
-              關閉視窗
+              關閉預覽視窗
             </button>
           </div>
         </div>
