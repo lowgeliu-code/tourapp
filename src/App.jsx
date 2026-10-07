@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, FileCode
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -30,7 +30,7 @@ const defaultData = {
       { 
         time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "展覽手冊", url: "" }],
-        files: [{ name: "行程說明圖檔", url: "" }],
+        notes: [{ title: "參訪重點筆記", content: "現場可自由拍照，請留意高壓設備。\n(可於此貼上圖片網址或詳細筆記內容)" }],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
         researchQA: "Q: 行李超重限制為何？\nA: 經濟艙託運行李為23公斤。"
@@ -209,14 +209,14 @@ export default function App() {
     });
   };
 
-  // 檔案/圖片網址管理（改為安全可靠的公開網址格式，支援手機 Safari / Line 瀏覽器）
-  const handleFileChange = (day, eventIndex, fileIndex, field, value) => {
+  // Note 筆記本管理
+  const handleNoteChange = (day, eventIndex, noteIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const files = [...(currentEv?.files || [])];
-      files[fileIndex] = { ...(files[fileIndex] || {}), [field]: value };
-      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      const notes = [...(currentEv?.notes || [])];
+      notes[noteIndex] = { ...(notes[noteIndex] || {}), [field]: value };
+      updatedEvents[eventIndex] = { ...currentEv, notes: notes };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -224,12 +224,12 @@ export default function App() {
     });
   };
 
-  const addFile = (day, eventIndex) => {
+  const addNote = (day, eventIndex) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const files = [...(currentEv?.files || []), { name: "", url: "" }];
-      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      const notes = [...(currentEv?.notes || []), { title: "筆記標題", content: "" }];
+      updatedEvents[eventIndex] = { ...currentEv, notes: notes };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -237,13 +237,13 @@ export default function App() {
     });
   };
 
-  const removeFile = (day, eventIndex, fileIndex) => {
+  const removeNote = (day, eventIndex, noteIndex) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const files = [...(currentEv?.files || [])];
-      files.splice(fileIndex, 1);
-      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      const notes = [...(currentEv?.notes || [])];
+      notes.splice(noteIndex, 1);
+      updatedEvents[eventIndex] = { ...currentEv, notes: notes };
       return {
         ...prev,
         itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
@@ -282,7 +282,7 @@ export default function App() {
 
       updatedEvents.push({ 
         time: newStartTime, endTime: newEndTime, icon: "activity", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", 
-        attachments: [{ name: "", url: "" }], files: [{ name: "", url: "" }], showResearch: false, researchPoint: "", researchQA: "" 
+        attachments: [{ name: "", url: "" }], notes: [], showResearch: false, researchPoint: "", researchQA: "" 
       });
       return {
         ...prev,
@@ -669,30 +669,33 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* 檔案/圖片網址列表（安全支援手機預覽） */}
-                                <div className="space-y-1 pt-1">
-                                  <div className="text-[10px] font-bold text-[#2563EB]">夾帶檔案 / 圖片 (請輸入公開連結或雲端網址)：</div>
-                                  {(ev?.files || []).map((file, fIdx) => (
-                                    <div key={fIdx} className="flex items-center gap-1">
-                                      <input 
-                                        className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
-                                        value={file?.name || ""} 
-                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'name', e.target.value)} 
-                                        placeholder="檔案名稱 (如圖片)" 
+                                {/* Note 筆記本管理 (支援圖片貼上與文字) */}
+                                <div className="space-y-2 pt-2 border-t border-gray-200">
+                                  <div className="text-[10px] font-bold text-[#2563EB]">Note 筆記本 (可貼上圖片網址與詳細說明)：</div>
+                                  {(ev?.notes || []).map((note, noteIdx) => (
+                                    <div key={noteIdx} className="bg-[#F8FAFC] p-2.5 rounded border border-gray-200 space-y-1.5">
+                                      <div className="flex items-center gap-1">
+                                        <input 
+                                          className="flex-1 text-[11px] font-bold border border-gray-300 rounded px-1.5 py-0.5 bg-white text-[#0F172A]" 
+                                          value={note?.title || ""} 
+                                          onChange={(e) => handleNoteChange(selectedDay, idx, noteIdx, 'title', e.target.value)} 
+                                          placeholder="筆記按鈕名稱 (例如: 參訪筆記)" 
+                                        />
+                                        <button onClick={() => removeNote(selectedDay, idx, noteIdx)} className="text-red-600 p-1 bg-red-50 rounded">
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </div>
+                                      <textarea 
+                                        className="w-full text-[10px] border border-gray-300 rounded p-1.5 bg-white" 
+                                        rows="3"
+                                        value={note?.content || ""} 
+                                        onChange={(e) => handleNoteChange(selectedDay, idx, noteIdx, 'content', e.target.value)} 
+                                        placeholder="輸入文字筆記，或貼上圖片網址 (https://...)" 
                                       />
-                                      <input 
-                                        className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
-                                        value={file?.url || ""} 
-                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'url', e.target.value)} 
-                                        placeholder="檔案/圖片網址" 
-                                      />
-                                      <button onClick={() => removeFile(selectedDay, idx, fIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
-                                        <Trash2 size={12} />
-                                      </button>
                                     </div>
                                   ))}
-                                  <button onClick={() => addFile(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
-                                    + 夾帶檔案/圖片
+                                  <button onClick={() => addNote(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-1 rounded border border-blue-200 border-dashed mt-1">
+                                    + 新增 Note 筆記
                                   </button>
                                 </div>
 
@@ -758,11 +761,15 @@ export default function App() {
                             </a>
                           ) : null)}
 
-                          {/* 手機安全點擊檢視的檔案/圖片按鈕 */}
-                          {ev?.files && ev.files.map((file, i) => file?.url ? (
-                            <a key={i} href={file.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors border border-blue-200">
-                              <ImageIcon size={11} className="mr-1 text-[#2563EB]" /> {file.name || `檔案 ${i + 1}`}
-                            </a>
+                          {/* 讀取模式：顯示 Note 筆記按鈕 */}
+                          {ev?.notes && ev.notes.map((note, i) => note?.title ? (
+                            <button 
+                              key={i}
+                              onClick={() => setModalContent({ eventTitle: ev?.title || "行程", title: `📝 ${note.title}`, text: note.content })}
+                              className="flex items-center text-[10px] font-bold text-white bg-slate-700 hover:bg-slate-800 px-3 py-1 rounded-lg shadow-sm transition-all"
+                            >
+                              📝 {note.title}
+                            </button>
                           ) : null)}
 
                           {ev?.showResearch && ev?.researchPoint && (
@@ -983,9 +990,19 @@ export default function App() {
               <div className="text-xs font-bold text-[#2563EB] mb-1">📍 {modalContent.eventTitle}</div>
               <div className="text-base font-black text-[#0F172A] border-b pb-2">{modalContent.title}</div>
             </div>
-            <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed max-h-60 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-gray-200">
-              {modalContent.text}
+            
+            {/* 彈跳視窗內容：自動判斷並支援圖片顯示與文字換行 */}
+            <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed max-h-72 overflow-y-auto bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-3">
+              {modalContent.text && modalContent.text.startsWith('http') ? (
+                <div className="text-center">
+                  <img src={modalContent.text} alt="筆記圖片" className="max-w-full rounded-lg shadow-md mx-auto" />
+                  <a href={modalContent.text} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 underline mt-2 block">檢視原圖連結</a>
+                </div>
+              ) : (
+                <div>{modalContent.text}</div>
+              )}
             </div>
+
             <button 
               onClick={() => setModalContent(null)}
               className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-2.5 rounded-xl text-xs transition-colors"
