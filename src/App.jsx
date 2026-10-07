@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -30,7 +30,7 @@ const defaultData = {
       { 
         time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "展覽手冊", url: "" }],
-        files: [],
+        files: [{ name: "行程說明圖檔", url: "" }],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
         researchQA: "Q: 行李超重限制為何？\nA: 經濟艙託運行李為23公斤。"
@@ -209,18 +209,26 @@ export default function App() {
     });
   };
 
-  // 真實檔案上傳處理（自動將檔案轉換為本地 URL）
-  const handleFileUpload = (day, eventIndex, e) => {
-    const uploadedFile = e.target.files[0];
-    if (!uploadedFile) return;
-
-    const fileUrl = URL.createObjectURL(uploadedFile);
-    const fileName = uploadedFile.name;
-
+  // 檔案/圖片網址管理（改為安全可靠的公開網址格式，支援手機 Safari / Line 瀏覽器）
+  const handleFileChange = (day, eventIndex, fileIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const files = [...(currentEv?.files || []), { name: fileName, url: fileUrl }];
+      const files = [...(currentEv?.files || [])];
+      files[fileIndex] = { ...(files[fileIndex] || {}), [field]: value };
+      updatedEvents[eventIndex] = { ...currentEv, files: files };
+      return {
+        ...prev,
+        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
+      };
+    });
+  };
+
+  const addFile = (day, eventIndex) => {
+    setEditData(prev => {
+      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
+      const currentEv = updatedEvents[eventIndex] || {};
+      const files = [...(currentEv?.files || []), { name: "", url: "" }];
       updatedEvents[eventIndex] = { ...currentEv, files: files };
       return {
         ...prev,
@@ -274,7 +282,7 @@ export default function App() {
 
       updatedEvents.push({ 
         time: newStartTime, endTime: newEndTime, icon: "activity", title: "新增活動項目", subtitle: "", note: "", mapUrl: "", 
-        attachments: [{ name: "", url: "" }], files: [], showResearch: false, researchPoint: "", researchQA: "" 
+        attachments: [{ name: "", url: "" }], files: [{ name: "", url: "" }], showResearch: false, researchPoint: "", researchQA: "" 
       });
       return {
         ...prev,
@@ -661,25 +669,31 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* 真實檔案/圖片上傳按鈕 */}
-                                <div className="space-y-1.5 pt-2 border-t border-gray-200">
-                                  <div className="text-[10px] font-bold text-[#2563EB]">夾帶檔案 / 圖片：</div>
+                                {/* 檔案/圖片網址列表（安全支援手機預覽） */}
+                                <div className="space-y-1 pt-1">
+                                  <div className="text-[10px] font-bold text-[#2563EB]">夾帶檔案 / 圖片 (請輸入公開連結或雲端網址)：</div>
                                   {(ev?.files || []).map((file, fIdx) => (
-                                    <div key={fIdx} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1 text-[10px]">
-                                      <span className="font-bold truncate max-w-[200px]">📎 {file.name}</span>
+                                    <div key={fIdx} className="flex items-center gap-1">
+                                      <input 
+                                        className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
+                                        value={file?.name || ""} 
+                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'name', e.target.value)} 
+                                        placeholder="檔案名稱 (如圖片)" 
+                                      />
+                                      <input 
+                                        className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
+                                        value={file?.url || ""} 
+                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'url', e.target.value)} 
+                                        placeholder="檔案/圖片網址" 
+                                      />
                                       <button onClick={() => removeFile(selectedDay, idx, fIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
                                         <Trash2 size={12} />
                                       </button>
                                     </div>
                                   ))}
-                                  <label className="inline-flex items-center text-[10px] font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition-all">
-                                    <Upload size={12} className="mr-1.5" /> ＋ 夾帶檔案/圖片
-                                    <input 
-                                      type="file" 
-                                      className="hidden" 
-                                      onChange={(e) => handleFileUpload(selectedDay, idx, e)} 
-                                    />
-                                  </label>
+                                  <button onClick={() => addFile(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
+                                    + 夾帶檔案/圖片
+                                  </button>
                                 </div>
 
                                 <div className="pt-2 border-t border-gray-200 space-y-2">
@@ -744,7 +758,7 @@ export default function App() {
                             </a>
                           ) : null)}
 
-                          {/* 讀取模式：顯示上傳的檔案/圖片按鈕 */}
+                          {/* 手機安全點擊檢視的檔案/圖片按鈕 */}
                           {ev?.files && ev.files.map((file, i) => file?.url ? (
                             <a key={i} href={file.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors border border-blue-200">
                               <ImageIcon size={11} className="mr-1 text-[#2563EB]" /> {file.name || `檔案 ${i + 1}`}
