@@ -31,7 +31,7 @@ const defaultData = {
         time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "報告連結", url: "https://da.gd/5wcJnH" }],
         files: [],
-        notes: [{ title: "路線指引說明", content: "請前往27樓接待處，並告知預約編號：001398。" }],
+        notes: [{ title: "接待辦理方式", content: "請前往27樓接待處，並告知預約編號：001398。" }],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
         researchQA: "Q: 行李超重限制為何？\nA: 經濟艙託運行李為23公斤。"
@@ -93,8 +93,21 @@ export default function App() {
   const [editData, setEditData] = useState(defaultData);
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
-  // 彈跳視窗 Modal 狀態（支援文字、圖片與網頁報告內嵌 Iframe）
+  // 彈跳視窗 Modal 狀態
   const [modalContent, setModalContent] = useState(null); 
+
+  // 背景滾動鎖定 (Background Scroll Lock)：彈窗開啟時禁止背景滑動
+  useEffect(() => {
+    if (modalContent) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none'; // 針對行動裝置禁止手勢穿透
+      return () => {
+        document.body.style.overflow = originalStyle;
+        document.body.style.touchAction = 'auto';
+      };
+    }
+  }, [modalContent]);
 
   useEffect(() => {
     const docRef = doc(db, 'tourConfig', 'mainContent');
@@ -867,7 +880,7 @@ export default function App() {
                             </a>
                           )}
                           
-                          {/* 報告/附件按鈕：在 App 內彈出預覽視窗，不跳出 LINE */}
+                          {/* 報告/附件按鈕 */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <button 
                               key={i} 
@@ -1105,11 +1118,24 @@ export default function App() {
         </div>
       )}
 
-      {/* 彈跳視窗 Modal (支援：In-App 內嵌網頁預覽、路線大圖、研究文字) */}
+      {/* 彈跳視窗 Modal (加入 overscroll-contain 與 背景鎖定，防止滑動穿透) */}
       {modalContent && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-gray-100 space-y-3 font-mono relative flex flex-col max-h-[88vh]">
-            <div className="flex justify-between items-start border-b pb-2">
+        <div 
+          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200 overscroll-contain"
+          onClick={(e) => {
+            // 點擊暗色背景可關閉視窗
+            if (e.target === e.currentTarget) setModalContent(null);
+          }}
+          onTouchMove={(e) => {
+            // 如果觸摸的是最外層遮罩，直接阻止滑動行為
+            if (e.target === e.currentTarget) e.preventDefault();
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-gray-100 space-y-3 font-mono relative flex flex-col max-h-[88vh] overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start border-b pb-2 shrink-0">
               <div className="pr-6">
                 <div className="text-xs font-bold text-[#2563EB] mb-0.5">📍 {modalContent.eventTitle}</div>
                 <div className="text-sm font-black text-[#0F172A] truncate max-w-[260px]">{modalContent.title}</div>
@@ -1122,16 +1148,17 @@ export default function App() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
+            {/* 視窗內部滾動區：設定 overscroll-contain 防止滑動傳遞給背景 */}
+            <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
               {modalContent.webUrl ? (
-                /* 網頁/報告內嵌模式：完全不跳出 LINE，一鍵關閉返回行程 */
+                /* 網頁/報告內嵌模式 */
                 <div className="h-[62vh] flex flex-col space-y-2">
                   <iframe 
                     src={modalContent.webUrl} 
                     title="報告預覽" 
                     className="w-full flex-1 border border-gray-200 rounded-lg shadow-inner bg-white"
                   />
-                  <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1">
+                  <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1 shrink-0">
                     <span>💡 若內容無法載入，可點右側：</span>
                     <a 
                       href={modalContent.webUrl} 
