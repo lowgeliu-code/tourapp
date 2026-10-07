@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -30,7 +30,7 @@ const defaultData = {
       { 
         time: "09:45", endTime: "10:45", icon: "activity", title: "展覽攤位A", subtitle: "T2華航 團體報到櫃檯", note: "請攜帶護照", mapUrl: "https://maps.google.com", 
         attachments: [{ name: "展覽手冊", url: "" }],
-        files: [{ name: "行程說明圖檔", url: "" }],
+        files: [],
         showResearch: true,
         researchPoint: "請務必於起飛前2小時抵達櫃檯完成報到手續。",
         researchQA: "Q: 行李超重限制為何？\nA: 經濟艙託運行李為23公斤。"
@@ -168,7 +168,6 @@ export default function App() {
     });
   };
 
-  // 附件網址管理
   const handleAttachmentChange = (day, eventIndex, attIndex, field, value) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
@@ -210,26 +209,18 @@ export default function App() {
     });
   };
 
-  // 檔案/圖片夾帶管理
-  const handleFileChange = (day, eventIndex, fileIndex, field, value) => {
-    setEditData(prev => {
-      const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
-      const currentEv = updatedEvents[eventIndex] || {};
-      const files = [...(currentEv?.files || [])];
-      files[fileIndex] = { ...(files[fileIndex] || {}), [field]: value };
-      updatedEvents[eventIndex] = { ...currentEv, files: files };
-      return {
-        ...prev,
-        itinerary: { ...prev.itinerary, [day]: { ...prev.itinerary[day], events: updatedEvents } }
-      };
-    });
-  };
+  // 真實檔案上傳處理（自動將檔案轉換為本地 URL）
+  const handleFileUpload = (day, eventIndex, e) => {
+    const uploadedFile = e.target.files[0];
+    if (!uploadedFile) return;
 
-  const addFile = (day, eventIndex) => {
+    const fileUrl = URL.createObjectURL(uploadedFile);
+    const fileName = uploadedFile.name;
+
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
       const currentEv = updatedEvents[eventIndex] || {};
-      const files = [...(currentEv?.files || []), { name: "", url: "" }];
+      const files = [...(currentEv?.files || []), { name: fileName, url: fileUrl }];
       updatedEvents[eventIndex] = { ...currentEv, files: files };
       return {
         ...prev,
@@ -252,7 +243,6 @@ export default function App() {
     });
   };
 
-  // 智慧時間計算：新行程開始時間 = 上一個行程結束時間 + 30分鐘；結束時間 = 開始時間 + 1小時
   const addEvent = (day) => {
     setEditData(prev => {
       const updatedEvents = [...(prev?.itinerary?.[day]?.events || [])];
@@ -265,7 +255,7 @@ export default function App() {
         const parts = baseTimeStr.split(':');
         if (parts.length === 2) {
           let h = parseInt(parts[0], 10);
-          let m = parseInt(parts[1], 10) + 30; // 加 30 分鐘
+          let m = parseInt(parts[1], 10) + 30;
           if (m >= 60) {
             h += 1;
             m -= 60;
@@ -275,7 +265,6 @@ export default function App() {
           const startMStr = String(m).padStart(2, '0');
           newStartTime = `${startHStr}:${startMStr}`;
 
-          // 結束時間 = 開始時間 + 1 小時
           let endH = h + 1;
           if (endH >= 24) endH = 23;
           const endHStr = String(endH).padStart(2, '0');
@@ -672,31 +661,25 @@ export default function App() {
                                   </button>
                                 </div>
 
-                                {/* 檔案 / 圖片夾帶列表 */}
-                                <div className="space-y-1 pt-1">
+                                {/* 真實檔案/圖片上傳按鈕 */}
+                                <div className="space-y-1.5 pt-2 border-t border-gray-200">
                                   <div className="text-[10px] font-bold text-[#2563EB]">夾帶檔案 / 圖片：</div>
                                   {(ev?.files || []).map((file, fIdx) => (
-                                    <div key={fIdx} className="flex items-center gap-1">
-                                      <input 
-                                        className="w-1/3 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white font-bold" 
-                                        value={file?.name || ""} 
-                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'name', e.target.value)} 
-                                        placeholder="檔案名稱 (如圖片)" 
-                                      />
-                                      <input 
-                                        className="flex-1 text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" 
-                                        value={file?.url || ""} 
-                                        onChange={(e) => handleFileChange(selectedDay, idx, fIdx, 'url', e.target.value)} 
-                                        placeholder="檔案/圖片連結" 
-                                      />
+                                    <div key={fIdx} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1 text-[10px]">
+                                      <span className="font-bold truncate max-w-[200px]">📎 {file.name}</span>
                                       <button onClick={() => removeFile(selectedDay, idx, fIdx)} className="text-red-600 p-0.5 bg-red-50 rounded">
                                         <Trash2 size={12} />
                                       </button>
                                     </div>
                                   ))}
-                                  <button onClick={() => addFile(selectedDay, idx)} className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 border-dashed mt-1">
-                                    + 夾帶檔案/圖片
-                                  </button>
+                                  <label className="inline-flex items-center text-[10px] font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition-all">
+                                    <Upload size={12} className="mr-1.5" /> ＋ 夾帶檔案/圖片
+                                    <input 
+                                      type="file" 
+                                      className="hidden" 
+                                      onChange={(e) => handleFileUpload(selectedDay, idx, e)} 
+                                    />
+                                  </label>
                                 </div>
 
                                 <div className="pt-2 border-t border-gray-200 space-y-2">
@@ -755,14 +738,13 @@ export default function App() {
                               <MapPin size={11} className="mr-1 text-[#2563EB]" /> Google Maps
                             </a>
                           )}
-                          {/* 網址附件 */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <a key={i} href={att.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2.5 py-1 rounded transition-colors">
                               <LinkIcon size={11} className="mr-1 text-[#2563EB]" /> {att.name || `附件 ${i + 1}`}
                             </a>
                           ) : null)}
 
-                          {/* 夾帶檔案/圖片 */}
+                          {/* 讀取模式：顯示上傳的檔案/圖片按鈕 */}
                           {ev?.files && ev.files.map((file, i) => file?.url ? (
                             <a key={i} href={file.url} target="_blank" rel="noreferrer" className="flex items-center text-[10px] font-bold text-[#1E293B] bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded transition-colors border border-blue-200">
                               <ImageIcon size={11} className="mr-1 text-[#2563EB]" /> {file.name || `檔案 ${i + 1}`}
@@ -797,7 +779,7 @@ export default function App() {
               
               {isAdmin && (
                 <div className="ml-[72px] mt-2 font-mono">
-                  <button onClick={() => addEvent(selectedDay)} className="flex items-center text-xs font-bold text-[#1E293B] bg-[#F1F5F9] px-3.5 py-2 rounded border border-[#2563EB] border-dashed hover:bg-[#E2E8F0]">
+                  <button onClick={() => addEvent(selectedDay)} className="flex items-center text-xs font-bold text-[#1E293B] bg-[#F8FAFC] px-3.5 py-2 rounded border border-[#2563EB] border-dashed hover:bg-[#E2E8F0]">
                     <PlusCircle size={15} className="mr-1.5 text-[#2563EB]" /> 新增活動
                   </button>
                 </div>
