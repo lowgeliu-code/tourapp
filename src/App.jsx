@@ -27,35 +27,35 @@ const defaultData = {
   activeEvent: null,
   itinerary: {
     1: { date: "9/13", weekday: "週日", title: "集合出發", events: [
-      { time: "09:40", endTime: "13:50", icon: "plane", title: "JL96 台北松山 → 東京羽田", subtitle: "TSA → HND 日本航空", note: "請攜帶護照 9:45 松山機場集合", mapUrl: "" },
+      { time: "09:40", endTime: "13:50", icon: "plane", title: "JL96 台北松山 → 東京羽田", subtitle: "TSA → HND\n日本航空", note: "請攜帶護照 9:45 松山機場集合", mapUrl: "" },
       { time: "13:00", endTime: "", icon: "hotel", title: "東急STAY銀座", subtitle: "飯店入住休息", note: "", mapUrl: "" }
     ]},
     2: { date: "9/14", weekday: "週一", title: "企業參訪", events: [
       { time: "10:00", endTime: "11:00", icon: "pin", title: "FAMIMA PARK 麻布台", subtitle: "東京都港区虎ノ門5丁目2-10", note: "大廳集合", mapUrl: "" },
       { time: "11:30", endTime: "", icon: "coffee", title: "穴子や 神谷町 (星鰻)", subtitle: "東京都港区虎ノ門5-3-10 1F", note: "", mapUrl: "" },
-      { time: "13:00", endTime: "", icon: "activity", title: "伊藤忠商事", subtitle: "東京都港区赤坂2丁目17-22", note: "", mapUrl: "" },
-      { time: "14:30", endTime: "15:30", icon: "activity", title: "泛太平洋國際控股", subtitle: "東京都渋谷区道玄坂2-25-12 8F", note: "", mapUrl: "" }
+      { time: "13:00", endTime: "", icon: "activity", title: "伊藤忠商事", subtitle: "加藤宏基 / IR部長代行\n意えりか / IR部シニアマネジャー", note: "東京都港区赤坂2丁目17-22", mapUrl: "" },
+      { time: "14:30", endTime: "15:30", icon: "activity", title: "泛太平洋國際控股", subtitle: "根本 眞悠", note: "東京都渋谷区道玄坂2-25-12 8F", mapUrl: "" }
     ]},
     3: { date: "9/15", weekday: "週二", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "三住集團", subtitle: "東京都千代田区九段南1-6-5", note: "東京都千代田区九段南", mapUrl: "" },
-      { time: "11:45", endTime: "", icon: "coffee", title: "美食米門 品川港南", subtitle: "東京都港区港南2-16-3 1F", note: "", mapUrl: "" },
-      { time: "13:00", endTime: "", icon: "activity", title: "豐田通商", subtitle: "東京都港区港南2-3-13", note: "", mapUrl: "" },
-      { time: "14:30", endTime: "15:30", icon: "activity", title: "川崎重工", subtitle: "東京都港区海岸1-14-5", note: "", mapUrl: "" }
+      { time: "10:00", endTime: "11:00", icon: "activity", title: "三住集團", subtitle: "IR室總經理 示野功雄 部長", note: "東京都千代田区九段南1-6-5", mapUrl: "" },
+      { time: "11:45", endTime: "", icon: "coffee", title: "美食米門 品川港南", subtitle: "日式定食\n東京都港区港南2-16-3 1F", note: "", mapUrl: "" },
+      { time: "13:00", endTime: "", icon: "activity", title: "豐田通商", subtitle: "IR室 室長 高木麻也子\n木下真智子、加藤周平", note: "東京都港区港南2-3-13", mapUrl: "" },
+      { time: "14:30", endTime: "15:30", icon: "activity", title: "川崎重工", subtitle: "IR部長の勝野弘之\nIR課長の杉原淳史", note: "東京都港区海岸1-14-5", mapUrl: "" }
     ]},
     4: { date: "9/16", weekday: "週三", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "住友商事", subtitle: "東京都千代田区大手町2-3-2", note: "大手町プレイス", mapUrl: "" },
-      { time: "11:30", endTime: "", icon: "coffee", title: "焼肉会席 ともび", subtitle: "東京都港区西新橋1-1-1 2F", note: "", mapUrl: "" },
-      { time: "13:00", endTime: "", icon: "activity", title: "龜甲萬", subtitle: "東京都港区西新橋2-1-1", note: "", mapUrl: "" },
+      { time: "10:00", endTime: "11:00", icon: "activity", title: "住友商事", subtitle: "永井 祐介\nインベスターリレーションズ部 部長", note: "大手町プレイス", mapUrl: "" },
+      { time: "11:30", endTime: "", icon: "coffee", title: "焼肉会席 ともび", subtitle: "燒肉\n東京都港区西新橋1-1-1 2F", note: "", mapUrl: "" },
+      { time: "13:00", endTime: "", icon: "activity", title: "龜甲萬", subtitle: "片桐 大輔 コーポレートコミュニケーション部\n高坂 知世 コーポレートコミュニケーション部", note: "東京都港区西新橋2-1-1", mapUrl: "" },
       { time: "14:30", endTime: "15:30", icon: "activity", title: "兼松", subtitle: "東京都千代田区丸の内2-7-2 16F", note: "", mapUrl: "" }
     ]},
     5: { date: "9/17", weekday: "週四", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "丸紅", subtitle: "東京都千代田区大手町1-4-2", note: "大手町1-4-2", mapUrl: "" },
-      { time: "11:30", endTime: "", icon: "coffee", title: "Delirium Cafe Tokyo", subtitle: "東京都千代田区霞が関3-2-6 1F", note: "", mapUrl: "" },
-      { time: "13:30", endTime: "14:30", icon: "activity", title: "雙日控股", subtitle: "東京都千代田区内幸町2-1-1", note: "", mapUrl: "" }
+      { time: "10:00", endTime: "11:00", icon: "activity", title: "丸紅", subtitle: "IR 関 芳樹、水谷 空良、矢口 諒", note: "大手町1-4-2", mapUrl: "" },
+      { time: "11:30", endTime: "", icon: "coffee", title: "Delirium Cafe Tokyo", subtitle: "排餐\n東京都千代田区霞が関3-2-6 1F", note: "", mapUrl: "" },
+      { time: "13:30", endTime: "14:30", icon: "activity", title: "雙日控股", subtitle: "IR課 課長 村田千尋\nIR課 上級主任 本間裕大", note: "東京都千代田区内幸町2-1-1", mapUrl: "" }
     ]},
     6: { date: "9/18", weekday: "週五", title: "電玩展參訪", events: [
       { time: "10:00", endTime: "10:30", icon: "guide", title: "東京電玩展 TGS 2026", subtitle: "千葉市美浜区中瀬2-1 幕張メッセ", note: "幕張メッセ", mapUrl: "" },
-      { time: "10:30", endTime: "11:30", icon: "guide", title: "CAPCOM 卡普空", subtitle: "攤位07-S01 遊戲試玩+導覽", note: "", mapUrl: "" },
+      { time: "10:30", endTime: "11:30", icon: "guide", title: "CAPCOM 卡普空", subtitle: "攤位07-S01\n(含遊戲試玩30分+攤位導覽)", note: "", mapUrl: "" },
       { time: "12:00", endTime: "", icon: "coffee", title: "會場美食區", subtitle: "會場自由用餐", note: "", mapUrl: "" },
       { time: "13:30", endTime: "14:00", icon: "guide", title: "Gungho 玩和線上娛樂", subtitle: "攤位06-C06", note: "", mapUrl: "" }
     ]}
@@ -677,9 +677,6 @@ export default function App() {
   };
 
   // 根據行程標籤指定行程顏色
-  // 班機、餐飲、飯店 => 藍色
-  // 活動、地標 => 黃色
-  // 導覽 => 綠色
   const getEventBgColor = (ev) => {
     const icon = ev.icon || 'activity';
     if (['plane', 'coffee', 'hotel'].includes(icon)) {
@@ -688,11 +685,10 @@ export default function App() {
     if (icon === 'guide') {
       return 'bg-[#EBF7EE] border-[#CDEBD4]'; // 綠色
     }
-    // 預設 (activity, pin)
     return 'bg-[#FFF6E5] border-[#FDE5BE]'; // 黃色
   };
 
-  // 取得整份行程中出現的活動類別，以便動態輸出圖例
+  // 取得整份行程中出現的活動類別，動態輸出圖例
   const allEvents = Object.values(displayData?.itinerary || {}).flatMap(d => d.events || []);
   const hasTripEvents = allEvents.some(e => ['plane', 'coffee', 'hotel'].includes(e.icon));
   const hasVisitEvents = allEvents.some(e => ['activity', 'pin', undefined, ''].includes(e.icon));
@@ -876,9 +872,18 @@ export default function App() {
                         <div className="flex-1 w-full mr-3">
                           {isAdmin ? (
                             <div className="space-y-1.5 w-full pt-8">
-                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev?.title || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題" />
-                              <input className="w-full text-[11px] text-gray-600 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev?.subtitle || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} placeholder="副標題" />
-                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev?.note || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="備註" />
+                              <input className="w-full font-bold text-[#0F172A] border-b border-gray-200 bg-[#F8FAFC] px-1 text-xs" value={ev?.title || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'title', e.target.value)} placeholder="主標題 (公司/參訪名稱)" />
+                              
+                              {/* 支援換行排版的副標題 Textarea */}
+                              <textarea 
+                                className="w-full text-[11px] text-gray-700 border border-gray-300 rounded bg-[#F8FAFC] p-1.5 focus:bg-white focus:outline-none" 
+                                rows="2"
+                                value={ev?.subtitle || ""} 
+                                onChange={(e) => handleEventChange(selectedDay, idx, 'subtitle', e.target.value)} 
+                                placeholder="副標題 (可直接按 Enter 換行，例如接洽窗口與職稱)" 
+                              />
+
+                              <input className="w-full text-[10px] text-gray-500 border-b border-gray-200 bg-[#F8FAFC] px-1" value={ev?.note || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'note', e.target.value)} placeholder="地址或備註" />
                               
                               <div className="pt-1.5 mt-1.5 border-t border-dashed border-gray-200 space-y-1.5">
                                 <input className="w-full text-[10px] border border-gray-300 rounded px-1.5 py-0.5 bg-white" value={ev?.mapUrl || ""} onChange={(e) => handleEventChange(selectedDay, idx, 'mapUrl', e.target.value)} placeholder="Google Maps 連結" />
@@ -1010,7 +1015,7 @@ export default function App() {
                           ) : (
                             <>
                               <div className="font-bold text-[#0F172A] text-xs">{ev?.title}</div>
-                              {ev?.subtitle && <div className="text-[11px] text-gray-600 mt-0.5">{ev.subtitle}</div>}
+                              {ev?.subtitle && <div className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-line leading-relaxed">{ev.subtitle}</div>}
                               {ev?.note && <div className="text-[10px] text-[#2563EB] mt-1 font-sans">{ev.note}</div>}
                             </>
                           )}
@@ -1502,7 +1507,7 @@ export default function App() {
                     </span>
                   </div>
 
-                  {/* 動態圖例：根據當前活動是否存在而顯示 */}
+                  {/* 動態圖例：根據當前活動是否存在而精準顯示 */}
                   <div className="flex items-center space-x-3 text-[10px] font-bold text-gray-700">
                     {hasTripEvents && (
                       <div className="flex items-center">
@@ -1566,7 +1571,7 @@ export default function App() {
                                 <div className="font-bold underline text-[#0F172A] leading-tight">
                                   {ev.time}{ev.endTime ? ` - ${ev.endTime}` : ''} {ev.title}
                                 </div>
-                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight">{ev.subtitle}</div>}
+                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight whitespace-pre-line">{ev.subtitle}</div>}
                                 {ev.note && <div className="text-[8px] text-[#2563EB] font-bold mt-0.5">📌 {ev.note}</div>}
                               </div>
                             ))}
@@ -1590,7 +1595,7 @@ export default function App() {
                                 <div className="font-bold underline text-[#0F172A] leading-tight">
                                   {ev.time} {ev.title}
                                 </div>
-                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight">{ev.subtitle}</div>}
+                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight whitespace-pre-line">{ev.subtitle}</div>}
                                 {ev.note && <div className="text-[8px] text-[#2563EB] font-bold mt-0.5">📌 {ev.note}</div>}
                               </div>
                             )) : (
@@ -1616,7 +1621,7 @@ export default function App() {
                                 <div className="font-bold underline text-[#0F172A] leading-tight">
                                   {ev.time}{ev.endTime ? ` - ${ev.endTime}` : ''} {ev.title}
                                 </div>
-                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight">{ev.subtitle}</div>}
+                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight whitespace-pre-line">{ev.subtitle}</div>}
                                 {ev.note && <div className="text-[8px] text-[#2563EB] font-bold mt-0.5">📌 {ev.note}</div>}
                               </div>
                             ))}
