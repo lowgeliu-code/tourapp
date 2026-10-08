@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, CheckSquare, Info, MapPin, User,
   Bell, ExternalLink, Settings, Edit3, Save,
-  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload, Loader2, Copy, Check, Printer, Table
+  Plane, Coffee, Store, Hotel, CalendarDays, Link as LinkIcon, PlusCircle, Trash2, Shield, TrendingUp, Star, ArrowUp, ArrowDown, X, Gift, PhoneCall, FileText, Image as ImageIcon, Upload, Loader2, Copy, Check, Printer, Table, Flag
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
@@ -54,10 +54,10 @@ const defaultData = {
       { time: "13:30", endTime: "14:30", icon: "activity", title: "雙日控股", subtitle: "東京都千代田区内幸町2-1-1", note: "", mapUrl: "" }
     ]},
     6: { date: "9/18", weekday: "週五", title: "電玩展參訪", events: [
-      { time: "10:00", endTime: "10:30", icon: "store", title: "東京電玩展 TGS 2026", subtitle: "千葉市美浜区中瀬2-1 幕張メッセ", note: "幕張メッセ", mapUrl: "" },
-      { time: "10:30", endTime: "11:30", icon: "store", title: "CAPCOM 卡普空", subtitle: "攤位07-S01 遊戲試玩+導覽", note: "", mapUrl: "" },
+      { time: "10:00", endTime: "10:30", icon: "guide", title: "東京電玩展 TGS 2026", subtitle: "千葉市美浜区中瀬2-1 幕張メッセ", note: "幕張メッセ", mapUrl: "" },
+      { time: "10:30", endTime: "11:30", icon: "guide", title: "CAPCOM 卡普空", subtitle: "攤位07-S01 遊戲試玩+導覽", note: "", mapUrl: "" },
       { time: "12:00", endTime: "", icon: "coffee", title: "會場美食區", subtitle: "會場自由用餐", note: "", mapUrl: "" },
-      { time: "13:30", endTime: "14:00", icon: "store", title: "Gungho 玩和線上娛樂", subtitle: "攤位06-C06", note: "", mapUrl: "" }
+      { time: "13:30", endTime: "14:00", icon: "guide", title: "Gungho 玩和線上娛樂", subtitle: "攤位06-C06", note: "", mapUrl: "" }
     ]}
   },
   checklist: [
@@ -640,7 +640,8 @@ export default function App() {
       case 'coffee': return <Coffee size={16} />;
       case 'hotel': return <Hotel size={16} />;
       case 'plane': return <Plane size={16} />;
-      default: return <MapPin size={16} />;
+      case 'guide': return <Flag size={16} />;
+      default: return <CalendarDays size={16} />;
     }
   };
 
@@ -675,12 +676,27 @@ export default function App() {
     }
   };
 
+  // 根據行程標籤指定行程顏色
+  // 班機、餐飲、飯店 => 藍色
+  // 活動、地標 => 黃色
+  // 導覽 => 綠色
   const getEventBgColor = (ev) => {
-    if (ev.icon === 'store') return 'bg-[#EBF7EE] border-[#CDEBD4]';
-    if (ev.icon === 'coffee') return 'bg-[#F0F5FA] border-[#DCE6F0]';
-    if (ev.icon === 'pin') return 'bg-[#E4EEF8] border-[#CCE0F3]';
-    return 'bg-[#FFF6E5] border-[#FDE5BE]';
+    const icon = ev.icon || 'activity';
+    if (['plane', 'coffee', 'hotel'].includes(icon)) {
+      return 'bg-[#E4EEF8] border-[#CCE0F3]'; // 藍色
+    }
+    if (icon === 'guide') {
+      return 'bg-[#EBF7EE] border-[#CDEBD4]'; // 綠色
+    }
+    // 預設 (activity, pin)
+    return 'bg-[#FFF6E5] border-[#FDE5BE]'; // 黃色
   };
+
+  // 取得整份行程中出現的活動類別，以便動態輸出圖例
+  const allEvents = Object.values(displayData?.itinerary || {}).flatMap(d => d.events || []);
+  const hasTripEvents = allEvents.some(e => ['plane', 'coffee', 'hotel'].includes(e.icon));
+  const hasVisitEvents = allEvents.some(e => ['activity', 'pin', undefined, ''].includes(e.icon));
+  const hasGuideEvents = allEvents.some(e => e.icon === 'guide');
 
   const renderContent = () => {
     switch (activeTab) {
@@ -737,7 +753,7 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            {/* 日期列包覆防突出版面 */}
+            {/* 日期列 */}
             <div className="sticky top-14 z-40 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1 overflow-x-auto max-w-full scrollbar-none">
               {Object.keys(displayData?.itinerary || {}).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
@@ -852,6 +868,7 @@ export default function App() {
                               <option value="coffee">☕ 餐飲</option>
                               <option value="hotel">🏨 飯店</option>
                               <option value="plane">✈️ 班機</option>
+                              <option value="guide">🚩 導覽</option>
                             </select>
                           ) : getEventIcon(ev?.icon)}
                         </div>
@@ -1226,7 +1243,6 @@ export default function App() {
 
   return (
     <>
-      {/* 修正後的極致列印樣式：隱藏非表格元素，並強制將矩陣表鋪滿單頁橫向 A4 */}
       <style>{`
         @media print {
           @page {
@@ -1265,7 +1281,7 @@ export default function App() {
             height: 100% !important;
             display: flex !important;
             flex-direction: column !important;
-            zoom: 82% !important; /* 確保 7 天與全部活動完整收斂在單頁 A4 橫向內 */
+            zoom: 82% !important;
           }
           table {
             page-break-inside: avoid !important;
@@ -1274,7 +1290,7 @@ export default function App() {
         }
       `}</style>
 
-      {/* 網頁主容器 (加上 app-main-view，列印時徹底隱藏) */}
+      {/* 網頁主容器 */}
       <div className="app-main-view max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
         {/* 頂部導覽列 */}
         <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5">
@@ -1437,7 +1453,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 外資矩陣行程總表 Modal：列印時成為獨立的滿版頁面 */}
+      {/* 外資矩陣行程總表 Modal */}
       {showMatrixModal && (
         <div 
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 md:p-6 animate-in fade-in duration-200 overscroll-contain print:p-0 print:bg-white"
@@ -1477,7 +1493,7 @@ export default function App() {
             <div className="flex-1 overflow-auto p-4 md:p-6 bg-white print:p-0 print:overflow-visible">
               <div className="w-full border border-gray-300 rounded overflow-hidden bg-white print-table-wrapper print:border-gray-400">
                 
-                {/* 報表大標題與圖例 */}
+                {/* 報表大標題與動態圖例 */}
                 <div className="px-3 py-2 bg-white border-b border-gray-300 flex justify-between items-center shrink-0">
                   <div className="flex items-baseline space-x-3">
                     <h1 className="text-2xl font-black tracking-tight text-[#003B73] font-serif">行程表</h1>
@@ -1486,11 +1502,23 @@ export default function App() {
                     </span>
                   </div>
 
-                  {/* 圖例說明 */}
+                  {/* 動態圖例：根據當前活動是否存在而顯示 */}
                   <div className="flex items-center space-x-3 text-[10px] font-bold text-gray-700">
-                    <div className="flex items-center"><span className="w-2.5 h-2.5 bg-[#E4EEF8] border border-[#CCE0F3] mr-1 rounded-xs"></span> 訪店</div>
-                    <div className="flex items-center"><span className="w-2.5 h-2.5 bg-[#FFF6E5] border border-[#FDE5BE] mr-1 rounded-xs"></span> 公司參訪行程</div>
-                    <div className="flex items-center"><span className="w-2.5 h-2.5 bg-[#EBF7EE] border border-[#CDEBD4] mr-1 rounded-xs"></span> 展館參訪行程</div>
+                    {hasTripEvents && (
+                      <div className="flex items-center">
+                        <span className="w-2.5 h-2.5 bg-[#E4EEF8] border border-[#CCE0F3] mr-1 rounded-xs"></span> 行程
+                      </div>
+                    )}
+                    {hasVisitEvents && (
+                      <div className="flex items-center">
+                        <span className="w-2.5 h-2.5 bg-[#FFF6E5] border border-[#FDE5BE] mr-1 rounded-xs"></span> 參訪行程
+                      </div>
+                    )}
+                    {hasGuideEvents && (
+                      <div className="flex items-center">
+                        <span className="w-2.5 h-2.5 bg-[#EBF7EE] border border-[#CDEBD4] mr-1 rounded-xs"></span> 導覽行程
+                      </div>
+                    )}
                   </div>
                 </div>
 
