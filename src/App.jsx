@@ -26,34 +26,38 @@ const defaultData = {
   eventDate: "2026.12.1 — 12.03",
   activeEvent: null,
   itinerary: {
-    1: { date: "9/14", weekday: "週一", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "FAMIMA PARK AZABUDAI", subtitle: "東京都港区虎ノ門5丁目2-10", note: "東急 9:40 / 三井 9:45 集合", mapUrl: "https://maps.google.com" },
-      { time: "11:30", endTime: "12:30", icon: "coffee", title: "穴子や 神谷町 (星鰻)", subtitle: "東京都港区虎ノ門5-3-10 トランスパックビル 1F", note: "餐廳 / 12:45 集合", mapUrl: "" },
-      { time: "13:00", endTime: "14:00", icon: "activity", title: "伊藤忠商事", subtitle: "東京都港区赤坂2丁目17-22 赤坂トラストタワー", note: "", mapUrl: "" },
-      { time: "14:30", endTime: "15:30", icon: "activity", title: "PPIH", subtitle: "東京都渋谷区道玄坂2-25-12 道玄坂通 8F", note: "", mapUrl: "" },
-      { time: "16:00", endTime: "17:00", icon: "activity", title: "三越伊勢丹", subtitle: "新宿区西新宿3-2-5 三越伊勢丹西新宿ビル", note: "", mapUrl: "" }
+    1: { date: "9/13", weekday: "週日", title: "集合出發", events: [
+      { time: "09:40", endTime: "13:50", icon: "plane", title: "JL96 台北松山 → 東京羽田", subtitle: "TSA → HND 日本航空", note: "請攜帶護照 9:45 松山機場集合", mapUrl: "" },
+      { time: "13:00", endTime: "", icon: "hotel", title: "東急STAY銀座", subtitle: "飯店入住休息", note: "", mapUrl: "" }
     ]},
-    2: { date: "9/15", weekday: "週二", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "MISUMI三住集團", subtitle: "東京都千代田区九段南1-6-5 九段会館テラス", note: "東急 9:30 / 三井 9:35 集合", mapUrl: "" },
-      { time: "11:45", endTime: "12:45", icon: "coffee", title: "美食米門 品川港南", subtitle: "東京都港区港南2-16-3 品川グランドセントラルタワー 1F", note: "餐廳 / 12:45 集合", mapUrl: "" },
-      { time: "13:00", endTime: "14:00", icon: "activity", title: "豊田通商", subtitle: "東京都港区港南 2-3-13 品川フロントビル", note: "", mapUrl: "" },
-      { time: "14:30", endTime: "15:30", icon: "activity", title: "川崎重工", subtitle: "東京都港区海岸1-14-5", note: "", mapUrl: "" },
-      { time: "16:00", endTime: "17:00", icon: "activity", title: "三菱重工", subtitle: "東京都千代田区丸の内3-2-3 丸の内二重橋ビル", note: "", mapUrl: "" }
+    2: { date: "9/14", weekday: "週一", title: "企業參訪", events: [
+      { time: "10:00", endTime: "11:00", icon: "pin", title: "FAMIMA PARK 麻布台", subtitle: "東京都港区虎ノ門5丁目2-10", note: "大廳集合", mapUrl: "" },
+      { time: "11:30", endTime: "", icon: "coffee", title: "穴子や 神谷町 (星鰻)", subtitle: "東京都港区虎ノ門5-3-10 1F", note: "", mapUrl: "" },
+      { time: "13:00", endTime: "", icon: "activity", title: "伊藤忠商事", subtitle: "東京都港区赤坂2丁目17-22", note: "", mapUrl: "" },
+      { time: "14:30", endTime: "15:30", icon: "activity", title: "泛太平洋國際控股", subtitle: "東京都渋谷区道玄坂2-25-12 8F", note: "", mapUrl: "" }
     ]},
-    3: { date: "9/16", weekday: "週三", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "住友商事", subtitle: "東京都千代田区大手町2-3-2 大手町プレイス イーストタワー", note: "東急 9:30 / 三井 9:35 集合", mapUrl: "" },
-      { time: "11:30", endTime: "12:30", icon: "coffee", title: "焼肉会席 ともび", subtitle: "東京都港区西新橋1-1-1 日比谷フォートタワー 2F", note: "餐廳 / 12:50 集合", mapUrl: "" },
-      { time: "13:00", endTime: "14:00", icon: "activity", title: "龜甲萬", subtitle: "東京都港区西新橋2-1-1 興和西新橋ビル", note: "", mapUrl: "" },
-      { time: "14:30", endTime: "15:30", icon: "activity", title: "兼松", subtitle: "東京都千代田区丸の内2-7-2 JPタワー 16F", note: "", mapUrl: "" }
+    3: { date: "9/15", weekday: "週二", title: "企業參訪", events: [
+      { time: "10:00", endTime: "11:00", icon: "activity", title: "三住集團", subtitle: "東京都千代田区九段南1-6-5", note: "東京都千代田区九段南", mapUrl: "" },
+      { time: "11:45", endTime: "", icon: "coffee", title: "美食米門 品川港南", subtitle: "東京都港区港南2-16-3 1F", note: "", mapUrl: "" },
+      { time: "13:00", endTime: "", icon: "activity", title: "豐田通商", subtitle: "東京都港区港南2-3-13", note: "", mapUrl: "" },
+      { time: "14:30", endTime: "15:30", icon: "activity", title: "川崎重工", subtitle: "東京都港区海岸1-14-5", note: "", mapUrl: "" }
     ]},
-    4: { date: "9/17", weekday: "週四", title: "企業參訪", events: [
-      { time: "10:00", endTime: "11:00", icon: "activity", title: "丸紅", subtitle: "東京都千代田区大手町1-4-2", note: "東急 9:30 / 三井 9:35 集合", mapUrl: "" },
-      { time: "11:30", endTime: "12:30", icon: "coffee", title: "Delirium Cafe Tokyo", subtitle: "東京都千代田区霞が関3-2-6 東京倶楽部ビル 1F", note: "餐廳 / 13:15 集合", mapUrl: "" },
-      { time: "13:30", endTime: "14:30", icon: "activity", title: "雙日控股", subtitle: "東京都千代田区内幸町2-1-1 内幸町飯野ビル", note: "", mapUrl: "" },
-      { time: "15:00", endTime: "16:00", icon: "activity", title: "三菱商事", subtitle: "東京都千代田区丸の内2-3-1 三菱商事ビルディング", note: "", mapUrl: "" }
+    4: { date: "9/16", weekday: "週三", title: "企業參訪", events: [
+      { time: "10:00", endTime: "11:00", icon: "activity", title: "住友商事", subtitle: "東京都千代田区大手町2-3-2", note: "大手町プレイス", mapUrl: "" },
+      { time: "11:30", endTime: "", icon: "coffee", title: "焼肉会席 ともび", subtitle: "東京都港区西新橋1-1-1 2F", note: "", mapUrl: "" },
+      { time: "13:00", endTime: "", icon: "activity", title: "龜甲萬", subtitle: "東京都港区西新橋2-1-1", note: "", mapUrl: "" },
+      { time: "14:30", endTime: "15:30", icon: "activity", title: "兼松", subtitle: "東京都千代田区丸の内2-7-2 16F", note: "", mapUrl: "" }
     ]},
-    5: { date: "9/18", weekday: "週五", title: "展會參訪", events: [
-      { time: "10:00", endTime: "17:00", icon: "store", title: "東京電玩展 TGS 2026", subtitle: "千葉市美浜区中瀬2-1 幕張メッセ", note: "東急 8:20 / 三井 8:25 集合", mapUrl: "" }
+    5: { date: "9/17", weekday: "週四", title: "企業參訪", events: [
+      { time: "10:00", endTime: "11:00", icon: "activity", title: "丸紅", subtitle: "東京都千代田区大手町1-4-2", note: "大手町1-4-2", mapUrl: "" },
+      { time: "11:30", endTime: "", icon: "coffee", title: "Delirium Cafe Tokyo", subtitle: "東京都千代田区霞が関3-2-6 1F", note: "", mapUrl: "" },
+      { time: "13:30", endTime: "14:30", icon: "activity", title: "雙日控股", subtitle: "東京都千代田区内幸町2-1-1", note: "", mapUrl: "" }
+    ]},
+    6: { date: "9/18", weekday: "週五", title: "電玩展參訪", events: [
+      { time: "10:00", endTime: "10:30", icon: "store", title: "東京電玩展 TGS 2026", subtitle: "千葉市美浜区中瀬2-1 幕張メッセ", note: "幕張メッセ", mapUrl: "" },
+      { time: "10:30", endTime: "11:30", icon: "store", title: "CAPCOM 卡普空", subtitle: "攤位07-S01 遊戲試玩+導覽", note: "", mapUrl: "" },
+      { time: "12:00", endTime: "", icon: "coffee", title: "會場美食區", subtitle: "會場自由用餐", note: "", mapUrl: "" },
+      { time: "13:30", endTime: "14:00", icon: "store", title: "Gungho 玩和線上娛樂", subtitle: "攤位06-C06", note: "", mapUrl: "" }
     ]}
   },
   checklist: [
@@ -117,12 +121,9 @@ export default function App() {
   const [editData, setEditData] = useState(defaultData);
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
-  // 彈跳視窗 Modal 狀態
   const [modalContent, setModalContent] = useState(null); 
-  // 詳細橫向總表 Matrix Modal 狀態
   const [showMatrixModal, setShowMatrixModal] = useState(false);
 
-  // 背景滾動鎖定
   useEffect(() => {
     if (modalContent || showMatrixModal) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -656,12 +657,10 @@ export default function App() {
   const displayData = isAdmin ? editData : appData;
   const currentDay = displayData?.itinerary?.[selectedDay] || displayData?.itinerary?.[1] || { title: "", events: [] };
 
-  // 取得所有天數的數字陣列 [1, 2, 3, ...]
   const sortedDayKeys = Object.keys(displayData?.itinerary || {})
     .map(Number)
     .sort((a, b) => a - b);
 
-  // 時段歸納邏輯（上午、午餐、下午）
   const categorizeEventSlot = (ev) => {
     const timeStr = ev.time || "00:00";
     const [h, m] = timeStr.split(':').map(Number);
@@ -676,12 +675,11 @@ export default function App() {
     }
   };
 
-  // 取得活動的卡片背景色（仿外資分類：訪店=淡藍、公司參訪=淡橘黃、展館=淡綠）
   const getEventBgColor = (ev) => {
-    if (ev.icon === 'store') return 'bg-[#EBF7EE] border-[#CDEBD4]'; // 淡綠
-    if (ev.icon === 'coffee') return 'bg-[#F0F5FA] border-[#DCE6F0]'; // 午餐
-    if (ev.icon === 'pin') return 'bg-[#E4EEF8] border-[#CCE0F3]'; // 訪店淡藍
-    return 'bg-[#FFF6E5] border-[#FDE5BE]'; // 企業參訪經典淡黃橘
+    if (ev.icon === 'store') return 'bg-[#EBF7EE] border-[#CDEBD4]';
+    if (ev.icon === 'coffee') return 'bg-[#F0F5FA] border-[#DCE6F0]';
+    if (ev.icon === 'pin') return 'bg-[#E4EEF8] border-[#CCE0F3]';
+    return 'bg-[#FFF6E5] border-[#FDE5BE]';
   };
 
   const renderContent = () => {
@@ -739,7 +737,6 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
-            {/* 日期列包覆防突出版面 */}
             <div className="sticky top-14 z-40 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1 overflow-x-auto max-w-full scrollbar-none">
               {Object.keys(displayData?.itinerary || {}).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
@@ -834,7 +831,7 @@ export default function App() {
                             <button onClick={() => moveEvent(selectedDay, idx, 'up')} disabled={idx === 0} title="往上移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30 border-r border-gray-300">
                               <ArrowUp size={13} />
                             </button>
-                            <button onClick={() => moveEvent(selectedDay, idx, 'down')} disabled={idx === currentDay.events.length - 1} title="往下移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30">
+                            <button onClick={() => moveEvent(selectedDay, idx)} disabled={idx === currentDay.events.length - 1} title="往下移" className="p-1 hover:bg-gray-200 text-gray-700 disabled:opacity-30">
                               <ArrowDown size={13} />
                             </button>
                           </div>
@@ -1010,7 +1007,6 @@ export default function App() {
                             </a>
                           )}
                           
-                          {/* 報告/附件按鈕 */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <button 
                               key={i} 
@@ -1021,7 +1017,6 @@ export default function App() {
                             </button>
                           ) : null)}
 
-                          {/* 路線圖片按鈕 */}
                           {ev?.files && ev.files.map((file, i) => file?.url ? (
                             <button 
                               key={i} 
@@ -1032,7 +1027,6 @@ export default function App() {
                             </button>
                           ) : null)}
 
-                          {/* 路線文字筆記按鈕 */}
                           {ev?.notes && ev.notes.map((note, i) => note?.title ? (
                             <button 
                               key={i} 
@@ -1227,88 +1221,141 @@ export default function App() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
-      {/* 頂部導覽列 */}
-      <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5">
-        <div className="flex justify-between items-center">
-          <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
-            <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData?.brandName}
-          </div>
-          {isAdmin ? (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] bg-[#2563EB] text-white px-2 py-0.5 rounded font-mono font-bold tracking-widest">ADMIN</span>
+    <>
+      {/* 注入極致純淨的橫向 A4 列印樣式規則 */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 6mm;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* 隱藏網頁底層 App 所有元素、導覽列、按鈕 */
+          body > div:not(.print-container) {
+            display: none !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-container {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+          }
+          .print-card-table {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}</style>
+
+      {/* 網頁主容器 (加入 no-print，避免被印進 PDF) */}
+      <div className={`max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1] ${showMatrixModal ? 'print:hidden' : ''}`}>
+        {/* 頂部導覽列 */}
+        <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5 no-print">
+          <div className="flex justify-between items-center">
+            <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
+              <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData?.brandName}
             </div>
-          ) : (
-            currentTourId !== 'default' && (
-              <span className="text-[9px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono font-bold border">
-                {currentTourId}
-              </span>
-            )
+            {isAdmin ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] bg-[#2563EB] text-white px-2 py-0.5 rounded font-mono font-bold tracking-widest">ADMIN</span>
+              </div>
+            ) : (
+              currentTourId !== 'default' && (
+                <span className="text-[9px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono font-bold border">
+                  {currentTourId}
+                </span>
+              )
+            )}
+          </div>
+
+          {isAdmin && (
+            <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5 font-mono text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-bold shrink-0">行程切換:</span>
+                <select 
+                  className="flex-1 bg-gray-50 border border-gray-300 rounded px-1.5 py-1 text-[11px] font-bold text-[#0F172A]"
+                  value={currentTourId}
+                  onChange={(e) => handleSwitchTour(e.target.value)}
+                >
+                  {availableTours.map((t) => (
+                    <option key={t} value={t}>
+                      {t === 'default' ? 'default (預設 Semicon JP)' : t}
+                    </option>
+                  ))}
+                </select>
+                <button 
+                  onClick={handleCreateNewTour} 
+                  title="建立全新行程空間"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1 rounded text-[10px] shrink-0 shadow-sm"
+                >
+                  + 新增
+                </button>
+                <button 
+                  onClick={handleCopyLink} 
+                  title="複製此行程專屬分享網址"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded border border-gray-300 shrink-0 flex items-center"
+                >
+                  {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+                </button>
+              </div>
+
+              {/* 輸出詳細行程表按鈕 */}
+              <div className="pt-1">
+                <button 
+                  onClick={() => setShowMatrixModal(true)}
+                  className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-1.5 px-3 rounded text-[11px] flex items-center justify-center shadow transition-colors"
+                >
+                  <Table size={13} className="mr-1.5 text-blue-400" /> 📊 輸出詳細行程表 (外資矩陣總表)
+                </button>
+              </div>
+            </div>
           )}
         </div>
+        
+        {renderContent()}
 
-        {/* 管理員專屬：行程切換控制列與輸出詳細總表按鈕 */}
         {isAdmin && (
-          <div className="mt-2 pt-2 border-t border-gray-100 space-y-1.5 font-mono text-[11px]">
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-500 font-bold shrink-0">行程切換:</span>
-              <select 
-                className="flex-1 bg-gray-50 border border-gray-300 rounded px-1.5 py-1 text-[11px] font-bold text-[#0F172A]"
-                value={currentTourId}
-                onChange={(e) => handleSwitchTour(e.target.value)}
-              >
-                {availableTours.map((t) => (
-                  <option key={t} value={t}>
-                    {t === 'default' ? 'default (預設 Semicon JP)' : t}
-                  </option>
-                ))}
-              </select>
-              <button 
-                onClick={handleCreateNewTour} 
-                title="建立全新行程空間"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1 rounded text-[10px] shrink-0 shadow-sm"
-              >
-                + 新增
-              </button>
-              <button 
-                onClick={handleCopyLink} 
-                title="複製此行程專屬分享網址"
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded border border-gray-300 shrink-0 flex items-center"
-              >
-                {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
-              </button>
-            </div>
-
-            {/* 輸出詳細行程表按鈕 */}
-            <div className="pt-1">
-              <button 
-                onClick={() => setShowMatrixModal(true)}
-                className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-1.5 px-3 rounded text-[11px] flex items-center justify-center shadow transition-colors"
-              >
-                <Table size={13} className="mr-1.5 text-blue-400" /> 📊 輸出詳細行程表 (外資矩陣總表)
-              </button>
-            </div>
+          <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-40 pointer-events-none animate-in fade-in duration-200 no-print">
+            <button 
+              onClick={handleSaveToCloud}
+              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-center font-mono text-sm pointer-events-auto border-2 border-white/20 active:scale-95 transition-all"
+            >
+              <Save size={18} className="mr-2" /> 💾 儲存所有變更並同步至雲端
+            </button>
           </div>
         )}
-      </div>
-      
-      {renderContent()}
 
-      {isAdmin && (
-        <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-40 pointer-events-none animate-in fade-in duration-200">
-          <button 
-            onClick={handleSaveToCloud}
-            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-center font-mono text-sm pointer-events-auto border-2 border-white/20 active:scale-95 transition-all"
-          >
-            <Save size={18} className="mr-2" /> 💾 儲存所有變更並同步至雲端
-          </button>
+        {/* 底部導覽列 */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] no-print">
+          {[
+            { id: 'itinerary', icon: Calendar, label: '行程' },
+            { id: 'checklist', icon: CheckSquare, label: '裝備' },
+            { id: 'contact', icon: Info, label: '資訊' }
+          ].map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-1.5 w-20 transition-colors font-mono ${activeTab === tab.id ? 'text-[#2563EB]' : 'text-gray-400 hover:text-gray-600'}`}>
+              <tab.icon size={20} className="mb-0.5" />
+              <span className="text-[10px] font-bold">{tab.label}</span>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* 單一行程彈跳視窗 Modal */}
+      {/* 單一項目彈跳視窗 Modal (no-print) */}
       {modalContent && (
         <div 
-          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200 overscroll-contain"
+          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in duration-200 overscroll-contain no-print"
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalContent(null);
           }}
@@ -1375,20 +1422,20 @@ export default function App() {
         </div>
       )}
 
-      {/* 外資風格詳細矩陣總表 Modal (仿附圖設計 + 支援列印 / 存為 PDF) */}
+      {/* 外資矩陣行程總表 Modal (列印時獨立展開為純淨橫向 A4 滿版) */}
       {showMatrixModal && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 md:p-6 animate-in fade-in duration-200 overscroll-contain"
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 md:p-6 animate-in fade-in duration-200 overscroll-contain print:static print:p-0 print:bg-white print:m-0"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowMatrixModal(false);
           }}
         >
           <div 
-            className="bg-white rounded-2xl max-w-6xl w-full h-[92vh] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-200"
+            className="bg-white rounded-2xl max-w-6xl w-full h-[92vh] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-200 print-container print:border-none print:shadow-none print:w-full print:h-auto print:rounded-none"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 視窗頂部工具列 */}
-            <div className="p-3 bg-gray-50 border-b flex justify-between items-center shrink-0">
+            {/* 視窗頂部工具列 (列印時自動隱藏) */}
+            <div className="p-3 bg-gray-50 border-b flex justify-between items-center shrink-0 no-print">
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-sm text-[#0F172A]">📊 外資矩陣行程總表預覽</span>
                 <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded">
@@ -1398,7 +1445,7 @@ export default function App() {
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={() => window.print()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center shadow"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center shadow transition-all"
                 >
                   <Printer size={13} className="mr-1" /> 列印 / 另存 PDF
                 </button>
@@ -1411,52 +1458,51 @@ export default function App() {
               </div>
             </div>
 
-            {/* 可滾動總表內容區 (仿照附圖純外資格式) */}
-            <div className="flex-1 overflow-auto p-4 md:p-8 bg-white print:p-0">
-              <div className="min-w-[850px] border border-gray-300 shadow-sm rounded-lg overflow-hidden bg-white">
+            {/* 純淨外資行程總表本體 */}
+            <div className="flex-1 overflow-auto p-4 md:p-6 bg-white print:p-0 print:overflow-visible">
+              <div className="w-full border border-gray-300 rounded overflow-hidden bg-white print-card-table print:border-gray-400">
                 
                 {/* 報表頂部大標題與圖例 */}
-                <div className="p-4 bg-white border-b border-gray-300 flex justify-between items-end">
-                  <div className="flex items-baseline space-x-4">
-                    <h1 className="text-3xl font-black tracking-tight text-[#003B73] font-serif">行程表</h1>
-                    <span className="text-xs font-bold text-gray-500 font-mono tracking-widest uppercase">
+                <div className="px-3 py-2 bg-white border-b border-gray-300 flex justify-between items-center print:py-1.5">
+                  <div className="flex items-baseline space-x-3">
+                    <h1 className="text-2xl font-black tracking-tight text-[#003B73] font-serif print:text-xl">行程表</h1>
+                    <span className="text-[10px] font-bold text-gray-500 font-mono tracking-wider uppercase">
                       {displayData?.brandName} // {displayData?.eventDate}
                     </span>
                   </div>
 
                   {/* 圖例說明 */}
-                  <div className="flex items-center space-x-4 text-xs font-bold text-gray-700">
-                    <div className="flex items-center"><span className="w-3.5 h-3.5 bg-[#E4EEF8] border border-[#CCE0F3] mr-1.5 rounded-sm"></span> 訪店</div>
-                    <div className="flex items-center"><span className="w-3.5 h-3.5 bg-[#FFF6E5] border border-[#FDE5BE] mr-1.5 rounded-sm"></span> 公司參訪行程</div>
-                    <div className="flex items-center"><span className="w-3.5 h-3.5 bg-[#EBF7EE] border border-[#CDEBD4] mr-1.5 rounded-sm"></span> 展館參訪行程</div>
+                  <div className="flex items-center space-x-3 text-[10px] font-bold text-gray-700">
+                    <div className="flex items-center"><span className="w-2.5 h-2.5 bg-[#E4EEF8] border border-[#CCE0F3] mr-1 rounded-xs"></span> 訪店</div>
+                    <div className="flex items-center"><span className="w-2.5 h-2.5 bg-[#FFF6E5] border border-[#FDE5BE] mr-1 rounded-xs"></span> 公司參訪行程</div>
+                    <div className="flex items-center"><span className="w-2.5 h-2.5 bg-[#EBF7EE] border border-[#CDEBD4] mr-1 rounded-xs"></span> 展館參訪行程</div>
                   </div>
                 </div>
 
-                {/* 矩陣表格本體 */}
-                <table className="w-full border-collapse text-left text-xs">
+                {/* 橫向矩陣表格 */}
+                <table className="w-full border-collapse text-left text-[10px] table-fixed print:text-[9px]">
                   <thead>
                     {/* 日期列 */}
                     <tr className="bg-[#003B73] text-white">
-                      <th className="p-2.5 w-16 text-center border-r border-blue-900 font-bold">時段</th>
+                      <th className="p-1.5 w-10 text-center border-r border-blue-900 font-bold">時段</th>
                       {sortedDayKeys.map((dayNum) => {
                         const day = displayData?.itinerary?.[dayNum];
                         return (
-                          <th key={dayNum} className="p-2.5 border-r border-blue-900 last:border-r-0 text-center font-bold">
+                          <th key={dayNum} className="p-1.5 border-r border-blue-900 last:border-r-0 text-center font-bold">
                             <div>DAY {dayNum}</div>
-                            <div className="text-[11px] opacity-90">{day?.date} ({day?.weekday})</div>
+                            <div className="text-[9px] opacity-90">{day?.date} ({day?.weekday})</div>
                           </th>
                         );
                       })}
                     </tr>
                     {/* 集合時間列 */}
-                    <tr className="bg-[#F8FAFC] border-b border-gray-300 text-gray-700 font-medium">
-                      <th className="p-2 text-center border-r border-gray-300 bg-gray-100 font-bold">集合</th>
+                    <tr className="bg-[#F8FAFC] border-b border-gray-300 text-gray-700">
+                      <th className="p-1 text-center border-r border-gray-300 bg-gray-100 font-bold text-[9px]">集合</th>
                       {sortedDayKeys.map((dayNum) => {
                         const day = displayData?.itinerary?.[dayNum];
-                        // 抓取當天第一個活動的 note 或是設定的集合時間
                         const firstEventNote = day?.events?.[0]?.note || "大廳集合";
                         return (
-                          <td key={dayNum} className="p-2 text-center border-r border-gray-300 last:border-r-0 text-[10px] font-bold text-gray-600">
+                          <td key={dayNum} className="p-1 text-center border-r border-gray-300 last:border-r-0 text-[9px] font-bold text-gray-600 truncate">
                             {firstEventNote}
                           </td>
                         );
@@ -1466,21 +1512,21 @@ export default function App() {
                   <tbody>
                     {/* 上午區塊 */}
                     <tr className="border-b border-gray-300">
-                      <td className="p-3 text-center font-bold bg-[#F8FAFC] border-r border-gray-300 text-gray-700">
+                      <td className="p-1 text-center font-bold bg-[#F8FAFC] border-r border-gray-300 text-gray-700 align-middle">
                         上午
                       </td>
                       {sortedDayKeys.map((dayNum) => {
                         const day = displayData?.itinerary?.[dayNum];
                         const morningEvents = (day?.events || []).filter(e => categorizeEventSlot(e) === 'morning');
                         return (
-                          <td key={dayNum} className="p-2 border-r border-gray-300 last:border-r-0 align-top space-y-2">
+                          <td key={dayNum} className="p-1 border-r border-gray-300 last:border-r-0 align-top space-y-1">
                             {morningEvents.map((ev, eIdx) => (
-                              <div key={eIdx} className={`p-2.5 rounded border shadow-xs ${getEventBgColor(ev)}`}>
-                                <div className="font-bold underline text-[#0F172A] text-xs">
+                              <div key={eIdx} className={`p-1.5 rounded border ${getEventBgColor(ev)}`}>
+                                <div className="font-bold underline text-[#0F172A] leading-tight">
                                   {ev.time}{ev.endTime ? ` - ${ev.endTime}` : ''} {ev.title}
                                 </div>
-                                {ev.subtitle && <div className="text-[10px] text-gray-600 mt-1 leading-snug">{ev.subtitle}</div>}
-                                {ev.note && <div className="text-[9px] text-[#2563EB] font-bold mt-1">📌 {ev.note}</div>}
+                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight">{ev.subtitle}</div>}
+                                {ev.note && <div className="text-[8px] text-[#2563EB] font-bold mt-0.5">📌 {ev.note}</div>}
                               </div>
                             ))}
                           </td>
@@ -1490,24 +1536,24 @@ export default function App() {
 
                     {/* 午餐區塊 */}
                     <tr className="border-b border-gray-300 bg-[#FAFAFA]">
-                      <td className="p-3 text-center font-bold bg-[#F1F5F9] border-r border-gray-300 text-gray-700">
+                      <td className="p-1 text-center font-bold bg-[#F1F5F9] border-r border-gray-300 text-gray-700 align-middle">
                         午餐
                       </td>
                       {sortedDayKeys.map((dayNum) => {
                         const day = displayData?.itinerary?.[dayNum];
                         const lunchEvents = (day?.events || []).filter(e => categorizeEventSlot(e) === 'lunch');
                         return (
-                          <td key={dayNum} className="p-2 border-r border-gray-300 last:border-r-0 align-top space-y-2">
+                          <td key={dayNum} className="p-1 border-r border-gray-300 last:border-r-0 align-top space-y-1">
                             {lunchEvents.length > 0 ? lunchEvents.map((ev, eIdx) => (
-                              <div key={eIdx} className={`p-2.5 rounded border shadow-xs ${getEventBgColor(ev)}`}>
-                                <div className="font-bold underline text-[#0F172A] text-xs">
+                              <div key={eIdx} className={`p-1.5 rounded border ${getEventBgColor(ev)}`}>
+                                <div className="font-bold underline text-[#0F172A] leading-tight">
                                   {ev.time} {ev.title}
                                 </div>
-                                {ev.subtitle && <div className="text-[10px] text-gray-600 mt-1 leading-snug">{ev.subtitle}</div>}
-                                {ev.note && <div className="text-[9px] text-[#2563EB] font-bold mt-1">📌 {ev.note}</div>}
+                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight">{ev.subtitle}</div>}
+                                {ev.note && <div className="text-[8px] text-[#2563EB] font-bold mt-0.5">📌 {ev.note}</div>}
                               </div>
                             )) : (
-                              <div className="text-gray-400 text-[10px] text-center pt-2">會場美食區 / 自理</div>
+                              <div className="text-gray-400 text-[8.5px] text-center pt-1.5">會場美食區 / 自理</div>
                             )}
                           </td>
                         );
@@ -1516,21 +1562,21 @@ export default function App() {
 
                     {/* 下午區塊 */}
                     <tr>
-                      <td className="p-3 text-center font-bold bg-[#F8FAFC] border-r border-gray-300 text-gray-700">
+                      <td className="p-1 text-center font-bold bg-[#F8FAFC] border-r border-gray-300 text-gray-700 align-middle">
                         下午
                       </td>
                       {sortedDayKeys.map((dayNum) => {
                         const day = displayData?.itinerary?.[dayNum];
                         const afternoonEvents = (day?.events || []).filter(e => categorizeEventSlot(e) === 'afternoon');
                         return (
-                          <td key={dayNum} className="p-2 border-r border-gray-300 last:border-r-0 align-top space-y-2">
+                          <td key={dayNum} className="p-1 border-r border-gray-300 last:border-r-0 align-top space-y-1">
                             {afternoonEvents.map((ev, eIdx) => (
-                              <div key={eIdx} className={`p-2.5 rounded border shadow-xs ${getEventBgColor(ev)}`}>
-                                <div className="font-bold underline text-[#0F172A] text-xs">
+                              <div key={eIdx} className={`p-1.5 rounded border ${getEventBgColor(ev)}`}>
+                                <div className="font-bold underline text-[#0F172A] leading-tight">
                                   {ev.time}{ev.endTime ? ` - ${ev.endTime}` : ''} {ev.title}
                                 </div>
-                                {ev.subtitle && <div className="text-[10px] text-gray-600 mt-1 leading-snug">{ev.subtitle}</div>}
-                                {ev.note && <div className="text-[9px] text-[#2563EB] font-bold mt-1">📌 {ev.note}</div>}
+                                {ev.subtitle && <div className="text-[8.5px] text-gray-600 mt-0.5 leading-tight">{ev.subtitle}</div>}
+                                {ev.note && <div className="text-[8px] text-[#2563EB] font-bold mt-0.5">📌 {ev.note}</div>}
                               </div>
                             ))}
                           </td>
@@ -1542,8 +1588,8 @@ export default function App() {
               </div>
             </div>
             
-            {/* 視窗底部列 */}
-            <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0">
+            {/* 視窗底部列 (列印時自動隱藏) */}
+            <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0 no-print">
               <button 
                 onClick={() => setShowMatrixModal(false)}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-lg text-xs"
@@ -1554,20 +1600,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* 底部導覽列 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-        {[
-          { id: 'itinerary', icon: Calendar, label: '行程' },
-          { id: 'checklist', icon: CheckSquare, label: '裝備' },
-          { id: 'contact', icon: Info, label: '資訊' }
-        ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-1.5 w-20 transition-colors font-mono ${activeTab === tab.id ? 'text-[#2563EB]' : 'text-gray-400 hover:text-gray-600'}`}>
-            <tab.icon size={20} className="mb-0.5" />
-            <span className="text-[10px] font-bold">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
+    </>
   );
 }
