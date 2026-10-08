@@ -737,6 +737,7 @@ export default function App() {
               {isAdmin ? "🔧 管理員模式：可編輯標題、用上下箭頭調整順序。" : "點擊下方日期檢視當日詳細參訪與會議安排。"}
             </p>
 
+            {/* 日期列包覆防突出版面 */}
             <div className="sticky top-14 z-40 bg-[#F8FAFC] border-2 border-[#CBD5E1] rounded-lg p-1.5 flex items-center mb-4 shadow-xl gap-1 overflow-x-auto max-w-full scrollbar-none">
               {Object.keys(displayData?.itinerary || {}).map((dayNumStr) => {
                 const dayNum = Number(dayNumStr);
@@ -1007,6 +1008,7 @@ export default function App() {
                             </a>
                           )}
                           
+                          {/* 報告/附件按鈕 */}
                           {ev?.attachments && ev.attachments.map((att, i) => att?.url ? (
                             <button 
                               key={i} 
@@ -1017,6 +1019,7 @@ export default function App() {
                             </button>
                           ) : null)}
 
+                          {/* 路線圖片按鈕 */}
                           {ev?.files && ev.files.map((file, i) => file?.url ? (
                             <button 
                               key={i} 
@@ -1027,6 +1030,7 @@ export default function App() {
                             </button>
                           ) : null)}
 
+                          {/* 路線文字筆記按鈕 */}
                           {ev?.notes && ev.notes.map((note, i) => note?.title ? (
                             <button 
                               key={i} 
@@ -1222,47 +1226,58 @@ export default function App() {
 
   return (
     <>
-      {/* 注入極致純淨的橫向 A4 列印樣式規則 */}
+      {/* 修正後的極致列印樣式：隱藏非表格元素，並強制將矩陣表鋪滿單頁橫向 A4 */}
       <style>{`
         @media print {
           @page {
             size: A4 landscape;
-            margin: 6mm;
+            margin: 5mm;
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
-            color: #000000 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: visible !important;
           }
-          /* 隱藏網頁底層 App 所有元素、導覽列、按鈕 */
-          body > div:not(.print-container) {
+          .app-main-view, .no-print {
             display: none !important;
           }
-          .no-print {
-            display: none !important;
-          }
-          .print-container {
-            display: block !important;
-            width: 100% !important;
-            max-width: 100% !important;
+          .print-target-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #ffffff !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            align-items: stretch !important;
             padding: 0 !important;
             margin: 0 !important;
-            background: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            z-index: 999999 !important;
           }
-          .print-card-table {
+          .print-table-wrapper {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            zoom: 82% !important; /* 確保 7 天與全部活動完整收斂在單頁 A4 橫向內 */
+          }
+          table {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
         }
       `}</style>
 
-      {/* 網頁主容器 (加入 no-print，避免被印進 PDF) */}
-      <div className={`max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1] ${showMatrixModal ? 'print:hidden' : ''}`}>
+      {/* 網頁主容器 (加上 app-main-view，列印時徹底隱藏) */}
+      <div className="app-main-view max-w-md mx-auto bg-[#F8FAFC] min-h-screen pb-28 font-sans shadow-2xl relative border-x border-[#CBD5E1]">
         {/* 頂部導覽列 */}
-        <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5 no-print">
+        <div className="bg-white border-b border-[#CBD5E1] shadow-sm sticky top-0 z-50 px-4 py-2.5">
           <div className="flex justify-between items-center">
             <div className="text-[#0F172A] font-black text-xs md:text-sm tracking-widest font-mono flex items-center">
               <TrendingUp size={16} className="mr-1.5 text-[#2563EB]" /> {appData?.brandName}
@@ -1327,7 +1342,7 @@ export default function App() {
         {renderContent()}
 
         {isAdmin && (
-          <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-40 pointer-events-none animate-in fade-in duration-200 no-print">
+          <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-4 z-40 pointer-events-none animate-in fade-in duration-200">
             <button 
               onClick={handleSaveToCloud}
               className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3.5 px-4 rounded-xl shadow-xl flex items-center justify-center font-mono text-sm pointer-events-auto border-2 border-white/20 active:scale-95 transition-all"
@@ -1338,7 +1353,7 @@ export default function App() {
         )}
 
         {/* 底部導覽列 */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] no-print">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#CBD5E1] flex justify-around p-1.5 pb-7 max-w-md mx-auto z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
           {[
             { id: 'itinerary', icon: Calendar, label: '行程' },
             { id: 'checklist', icon: CheckSquare, label: '裝備' },
@@ -1422,19 +1437,19 @@ export default function App() {
         </div>
       )}
 
-      {/* 外資矩陣行程總表 Modal (列印時獨立展開為純淨橫向 A4 滿版) */}
+      {/* 外資矩陣行程總表 Modal：列印時成為獨立的滿版頁面 */}
       {showMatrixModal && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 md:p-6 animate-in fade-in duration-200 overscroll-contain print:static print:p-0 print:bg-white print:m-0"
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 md:p-6 animate-in fade-in duration-200 overscroll-contain print:p-0 print:bg-white"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowMatrixModal(false);
           }}
         >
           <div 
-            className="bg-white rounded-2xl max-w-6xl w-full h-[92vh] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-200 print-container print:border-none print:shadow-none print:w-full print:h-auto print:rounded-none"
+            className="bg-white rounded-2xl max-w-6xl w-full h-[92vh] shadow-2xl flex flex-col font-sans overflow-hidden border border-gray-200 print-target-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 視窗頂部工具列 (列印時自動隱藏) */}
+            {/* 頂部操作按鈕 (no-print) */}
             <div className="p-3 bg-gray-50 border-b flex justify-between items-center shrink-0 no-print">
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-sm text-[#0F172A]">📊 外資矩陣行程總表預覽</span>
@@ -1445,27 +1460,27 @@ export default function App() {
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={() => window.print()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center shadow transition-all"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center shadow transition-all cursor-pointer"
                 >
                   <Printer size={13} className="mr-1" /> 列印 / 另存 PDF
                 </button>
                 <button 
                   onClick={() => setShowMatrixModal(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200"
+                  className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
             </div>
 
-            {/* 純淨外資行程總表本體 */}
+            {/* 表格容器 */}
             <div className="flex-1 overflow-auto p-4 md:p-6 bg-white print:p-0 print:overflow-visible">
-              <div className="w-full border border-gray-300 rounded overflow-hidden bg-white print-card-table print:border-gray-400">
+              <div className="w-full border border-gray-300 rounded overflow-hidden bg-white print-table-wrapper print:border-gray-400">
                 
-                {/* 報表頂部大標題與圖例 */}
-                <div className="px-3 py-2 bg-white border-b border-gray-300 flex justify-between items-center print:py-1.5">
+                {/* 報表大標題與圖例 */}
+                <div className="px-3 py-2 bg-white border-b border-gray-300 flex justify-between items-center shrink-0">
                   <div className="flex items-baseline space-x-3">
-                    <h1 className="text-2xl font-black tracking-tight text-[#003B73] font-serif print:text-xl">行程表</h1>
+                    <h1 className="text-2xl font-black tracking-tight text-[#003B73] font-serif">行程表</h1>
                     <span className="text-[10px] font-bold text-gray-500 font-mono tracking-wider uppercase">
                       {displayData?.brandName} // {displayData?.eventDate}
                     </span>
@@ -1480,9 +1495,8 @@ export default function App() {
                 </div>
 
                 {/* 橫向矩陣表格 */}
-                <table className="w-full border-collapse text-left text-[10px] table-fixed print:text-[9px]">
+                <table className="w-full border-collapse text-left text-[10px] table-fixed">
                   <thead>
-                    {/* 日期列 */}
                     <tr className="bg-[#003B73] text-white">
                       <th className="p-1.5 w-10 text-center border-r border-blue-900 font-bold">時段</th>
                       {sortedDayKeys.map((dayNum) => {
@@ -1495,14 +1509,13 @@ export default function App() {
                         );
                       })}
                     </tr>
-                    {/* 集合時間列 */}
                     <tr className="bg-[#F8FAFC] border-b border-gray-300 text-gray-700">
                       <th className="p-1 text-center border-r border-gray-300 bg-gray-100 font-bold text-[9px]">集合</th>
                       {sortedDayKeys.map((dayNum) => {
                         const day = displayData?.itinerary?.[dayNum];
                         const firstEventNote = day?.events?.[0]?.note || "大廳集合";
                         return (
-                          <td key={dayNum} className="p-1 text-center border-r border-gray-300 last:border-r-0 text-[9px] font-bold text-gray-600 truncate">
+                          <td key={dayNum} className="p-1 text-center border-r border-gray-300 last:border-r-0 text-[8.5px] font-bold text-gray-600 truncate">
                             {firstEventNote}
                           </td>
                         );
@@ -1588,11 +1601,11 @@ export default function App() {
               </div>
             </div>
             
-            {/* 視窗底部列 (列印時自動隱藏) */}
+            {/* 視窗底部列 (no-print) */}
             <div className="p-3 bg-gray-50 border-t flex justify-end shrink-0 no-print">
               <button 
                 onClick={() => setShowMatrixModal(false)}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-lg text-xs"
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-lg text-xs cursor-pointer"
               >
                 關閉
               </button>
