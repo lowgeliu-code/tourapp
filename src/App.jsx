@@ -121,7 +121,169 @@ export default function App() {
   const [editData, setEditData] = useState(defaultData);
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
-  const [modalContent, setModalContent] = useState(null); 
+  const [modalContent, setModalContent] = useState(null);
+  const [exportingDm, setExportingDm] = useState(false);
+
+  const loadScriptOnce = (src) => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`載入失敗：${src}`));
+      document.head.appendChild(s);
+    });
+  };
+
+  const triggerFileDownload = (source, filename) => {
+    const a = document.createElement('a');
+    if (typeof source === 'string') {
+      a.href = source;
+    } else {
+      a.href = URL.createObjectURL(source);
+    }
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (typeof source !== 'string') {
+      setTimeout(() => URL.revokeObjectURL(a.href), 2500);
+    }
+  };
+
+  const handleExportVerticalDm = async () => {
+    try {
+      setExportingDm(true);
+      await Promise.all([
+        loadScriptOnce('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js'),
+        loadScriptOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js')
+      ]);
+
+      const srcData = displayData || appData || defaultData;
+      const brandName = srcData.brandName || 'Lowge securities';
+      const eventTitle = srcData.eventTitle || '機構法人專屬參訪行程';
+      const eventDate = srcData.eventDate || '';
+      const eventLocation = srcData.eventLocation || '';
+
+      // 彙整各天參訪 / 會議 / 議程重點（最多取 7 筆塞入單頁垂直版，避免溢出換頁）
+      const dayKeys = Object.keys(srcData.itinerary || {}).map(Number).sort((a, b) => a - b);
+      const dmItems = [];
+      dayKeys.forEach((dNum) => {
+        const dObj = srcData.itinerary[dNum];
+        const dayPrefix = `${dObj?.date || `D${dNum}`}`;
+        (dObj?.events || []).forEach((ev) => {
+          if (!ev?.title) return;
+          const firstSubLine = String(ev.subtitle || '').split('\n')[0].trim();
+          const detailText = firstSubLine ? `${ev.title}（${firstSubLine}）` : ev.title;
+          dmItems.push({
+            badge: `${dayPrefix} ${ev.time || ''}`.trim(),
+            detail: detailText
+          });
+        });
+      });
+
+      const finalItems = dmItems.length > 0
+        ? dmItems.slice(0, 7)
+        : [{ badge: '行程安排', detail: '請於 PPT 中編輯拜訪公司、時間與議程重點' }];
+
+      // 擷取主要聯絡窗口
+      const mainContact = (srcData.infoCards || []).find(c => c.iconType === 'user') || (srcData.infoCards || [])[0];
+      const contactLine = mainContact
+        ? `聯絡窗口：${mainContact.name || ''} ${((mainContact.items || []).map(it => `${it.label} ${it.value}`).join(' / '))}`.trim()
+        : '歡迎聯繫您的專屬業務窗口報名與洽詢';
+
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const safeTitle = String(eventTitle).replace(/[\\/:*?"<>|]/g, '_').slice(0, 24) || 'DM';
+
+      // 1. 產出「一頁式 9:16 垂直版可編輯 PPTX」
+      if (window.PptxGenJS) {
+        const pptx = new window.PptxGenJS();
+        pptx.defineLayout({ name: 'VERTICAL_DM_9_16', width: 7.5, height: 13.333 });
+        pptx.layout = 'VERTICAL_DM_9_16';
+        pptx.author = brandName;
+        pptx.title = eventTitle;
+
+        const slide = pptx.addSlide();
+        slide.background = { color: 'F8FAFC' };
+
+        // 頂部深藍品牌列 + 金色線
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 7.5, h: 1.0, fill: { color: '0F2C59' } });
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 1.0, w: 7.5, h: 0.07, fill: { color: 'D97706' } });
+        slide.addText(brandName, { x: 0.4, y: 0.22, w: 4.3, h: 0.55, fontSize: 15, bold: true, color: 'FFFFFF', valign: 'middle' });
+        slide.addText(eventDate || '日期待確認', {
+          x: 4.8, y: 0.25, w: 2.3, h: 0.5,
+          fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fill: { color: 'D97706' }
+        });
+
+        // 主視覺標題區
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 1.07, w: 7.5, h: 2.3, fill: { color: '163A70' } });
+        slide.addText('CORPORATE ACCESS & CLIENT INVITATION', { x: 0.4, y: 1.24, w: 6.7, h: 0.28, fontSize: 9.5, bold: true, color: 'FDE68A' });
+        slide.addText(eventTitle, { x: 0.4, y: 1.56, w: 6.7, h: 1.1, fontSize: 22, bold: true, color: 'FFFFFF', valign: 'top' });
+        slide.addText(`地點：${eventLocation || '詳情洽業務窗口'}`, { x: 0.4, y: 2.74, w: 6.7, h: 0.45, fontSize: 11.5, color: 'E2E8F0', valign: 'middle' });
+
+        // 單頁垂直卡片列表（動態均分高度，保證不換成第二頁）
+        slide.addText('行程亮點與拜訪／議程資訊', { x: 0.4, y: 3.56, w: 6.7, h: 0.36, fontSize: 13.5, bold: true, color: '0F2C59' });
+
+        const stepH = 7.45 / Math.max(finalItems.length, 1);
+        const cardH = Math.max(0.68, stepH - 0.1);
+        finalItems.forEach((it, idx) => {
+          const yPos = 4.0 + idx * stepH;
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0.4, y: yPos, w: 6.7, h: cardH,
+            fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
+          });
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0.4, y: yPos, w: 0.08, h: cardH,
+            fill: { color: 'D97706' }
+          });
+          slide.addText(it.badge, {
+            x: 0.58, y: yPos + 0.04, w: 1.65, h: cardH - 0.08,
+            fontSize: 10.5, bold: true, color: 'B45309', valign: 'middle'
+          });
+          slide.addText(it.detail, {
+            x: 2.3, y: yPos + 0.04, w: 4.65, h: cardH - 0.08,
+            fontSize: 11.5, color: '0F172A', valign: 'middle'
+          });
+        });
+
+        // 聯絡窗口列 + 底部邀約列
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0.4, y: 11.6, w: 6.7, h: 0.8,
+          fill: { color: 'EEF2F6' }, line: { color: 'CBD5E1', width: 0.75 }
+        });
+        slide.addText(contactLine, { x: 0.55, y: 11.65, w: 6.4, h: 0.7, fontSize: 10.5, color: '1E293B', valign: 'middle' });
+
+        slide.addShape(pptx.ShapeType.rect, { x: 0, y: 12.6, w: 7.5, h: 0.733, fill: { color: '0F2C59' } });
+        slide.addText('歡迎聯繫您的專屬業務窗口報名與洽詢（可於 PowerPoint 直接修改調整）', {
+          x: 0.4, y: 12.7, w: 6.7, h: 0.5, fontSize: 10.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
+        });
+
+        const pptBlob = await pptx.write({ outputType: 'blob' });
+        triggerFileDownload(pptBlob, `${safeTitle}_垂直DM_${stamp}.pptx`);
+      }
+
+      // 2. 同步產出「可直接轉傳的 9:16 垂直版 PNG 圖片」
+      const stageEl = document.getElementById('vertical-dm-export-stage');
+      if (stageEl && window.html2canvas) {
+        await new Promise(resolve => setTimeout(resolve, 350));
+        const canvas = await window.html2canvas(stageEl, {
+          scale: 1,
+          useCORS: true,
+          backgroundColor: '#f8fafc'
+        });
+        triggerFileDownload(canvas.toDataURL('image/png'), `${safeTitle}_垂直DM_${stamp}.png`);
+      }
+    } catch (err) {
+      console.error('匯出垂直 DM 失敗：', err);
+      alert(`匯出 DM 時發生錯誤：${err.message || err}`);
+    } finally {
+      setExportingDm(false);
+    }
+  };
   const [showMatrixModal, setShowMatrixModal] = useState(false);
 
   useEffect(() => {
@@ -1347,13 +1509,25 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 輸出詳細行程表按鈕 */}
-              <div className="pt-1">
+              {/* 輸出詳細行程表 + 匯出垂直版 DM 按鈕 */}
+              <div className="pt-1 grid grid-cols-2 gap-1.5">
                 <button 
-                  onClick={() => setShowMatrixModal(true)}
-                  className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-1.5 px-3 rounded text-[11px] flex items-center justify-center shadow transition-colors"
+                  onClick={() => setShowMatrixModal(true)} 
+                  className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white font-bold py-1.5 px-2 rounded text-[10.5px] flex items-center justify-center shadow transition-colors"
                 >
-                  <Table size={13} className="mr-1.5 text-blue-400" /> 📊 輸出詳細行程表 (外資矩陣總表)
+                  <Table size={12} className="mr-1 text-blue-400 shrink-0" /> 輸出詳細行程表
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportVerticalDm}
+                  disabled={exportingDm}
+                  className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold py-1.5 px-2 rounded text-[10.5px] flex items-center justify-center shadow transition-colors"
+                >
+                  {exportingDm ? (
+                    <><Loader2 size={12} className="mr-1 animate-spin shrink-0" /> 產出中...</>
+                  ) : (
+                    <><FileText size={12} className="mr-1 shrink-0" /> 匯出 DM (PPT+圖)</>
+                  )}
                 </button>
               </div>
             </div>
@@ -1646,6 +1820,170 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* 隱藏的 9:16 垂直版 DM 渲染畫布（供匯出可直接轉傳的 PNG 檔） */}
+      <div
+        id="vertical-dm-export-stage"
+        aria-hidden="true"
+        className="no-print"
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '900px',
+          height: '1600px',
+          backgroundColor: '#F8FAFC',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif',
+          boxSizing: 'border-box',
+          overflow: 'hidden'
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#0F2C59',
+            color: '#FFFFFF',
+            padding: '28px 40px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: '6px solid #D97706'
+          }}
+        >
+          <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '0.5px' }}>
+            {displayData?.brandName || 'Lowge securities'}
+          </div>
+          <div
+            style={{
+              backgroundColor: '#D97706',
+              color: '#FFFFFF',
+              padding: '8px 18px',
+              borderRadius: '999px',
+              fontSize: '20px',
+              fontWeight: 700
+            }}
+          >
+            {displayData?.eventDate || '日期待確認'}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #163A70 0%, #2563EB 100%)',
+            color: '#FFFFFF',
+            padding: '42px 40px 36px 40px'
+          }}
+        >
+          <div style={{ fontSize: '18px', letterSpacing: '2px', color: '#FDE68A', fontWeight: 700, marginBottom: '10px' }}>
+            CORPORATE ACCESS & CLIENT INVITATION
+          </div>
+          <div style={{ fontSize: '40px', fontWeight: 800, lineHeight: 1.24, marginBottom: '14px' }}>
+            {displayData?.eventTitle || '機構法人專屬參訪行程'}
+          </div>
+          <div style={{ fontSize: '21px', color: '#E2E8F0', lineHeight: 1.45 }}>
+            地點：{displayData?.eventLocation || '詳情洽業務窗口'}
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: '32px 40px 96px 40px',
+            height: '1120px',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}
+        >
+          <div
+            style={{
+              fontSize: '24px',
+              fontWeight: 800,
+              color: '#0F2C59',
+              borderLeft: '8px solid #D97706',
+              paddingLeft: '14px'
+            }}
+          >
+            行程亮點與拜訪／議程資訊
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+            {Object.keys(displayData?.itinerary || {})
+              .map(Number)
+              .sort((a, b) => a - b)
+              .flatMap((dNum) => {
+                const dObj = displayData.itinerary[dNum];
+                const dayPrefix = dObj?.date || `D${dNum}`;
+                return (dObj?.events || []).map((ev, idx) => ({
+                  key: `${dNum}-${idx}`,
+                  badge: `${dayPrefix} ${ev?.time || ''}`.trim(),
+                  detail: ev?.title || ''
+                }));
+              })
+              .filter((row) => row.detail)
+              .slice(0, 7)
+              .map((row) => (
+                <div
+                  key={row.key}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1.5px solid #CBD5E1',
+                    borderLeft: '10px solid #D97706',
+                    borderRadius: '10px',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '18px'
+                  }}
+                >
+                  <div style={{ minWidth: '175px', fontSize: '19px', fontWeight: 800, color: '#B45309' }}>
+                    {row.badge}
+                  </div>
+                  <div style={{ fontSize: '21px', fontWeight: 600, color: '#0F172A', lineHeight: 1.35, flex: 1 }}>
+                    {row.detail}
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          <div
+            style={{
+              backgroundColor: '#EEF2F6',
+              border: '1px solid #CBD5E1',
+              borderRadius: '10px',
+              padding: '16px 20px',
+              fontSize: '19px',
+              color: '#1E293B',
+              lineHeight: 1.5
+            }}
+          >
+            {(() => {
+              const mainContact =
+                (displayData?.infoCards || []).find((c) => c.iconType === 'user') ||
+                (displayData?.infoCards || [])[0];
+              if (!mainContact) return '歡迎聯繫您的專屬業務窗口報名與洽詢';
+              const details = (mainContact.items || []).map((it) => `${it.label} ${it.value}`).join(' / ');
+              return `聯絡窗口：${mainContact.name || ''} ${details}`.trim();
+            })()}
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: '#0F2C59',
+            color: '#FFFFFF',
+            padding: '22px 40px',
+            textAlign: 'center',
+            fontSize: '20px',
+            fontWeight: 600,
+            borderTop: '4px solid #D97706'
+          }}
+        >
+          歡迎聯繫您的專屬業務窗口報名與洽詢（可直接轉傳此圖或使用 PPT 編輯調整）
+        </div>
+      </div>
     </>
   );
 }
