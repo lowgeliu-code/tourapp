@@ -170,8 +170,8 @@ export default function App() {
       await Promise.all(tasks);
 
       const srcData = displayData || appData || defaultData;
-      const brandName = srcData.brandName || 'Lowge securities';
-      const eventTitle = srcData.eventTitle || '機構法人參訪交流團';
+      const brandName = (srcData.brandName || 'Lowge securities').toUpperCase();
+      const eventTitle = srcData.eventTitle || '機構法人專屬參訪交流';
       const eventDate = srcData.eventDate || '日期待確認';
       const eventLocation = srcData.eventLocation || '詳情洽業務窗口';
 
@@ -179,194 +179,178 @@ export default function App() {
         .map(Number)
         .sort((a, b) => a - b);
 
-      // 1. 整理「預計拜訪／參訪機構」清單與「每日行程重點摘要」
+      // 1. 擷取核心參訪／會議機構（精簡去重，避免雜訊塞滿畫面）
       const visitCompanies = [];
       const seenCompanies = new Set();
-      const highlightAgenda = [];
+      const scheduleHighlights = [];
 
       dayKeys.forEach((dNum) => {
         const dObj = srcData.itinerary[dNum];
-        const dayLabel = `${dObj?.date || `D${dNum}`}(${dObj?.weekday || ''})`;
+        const dayLabel = `${dObj?.date || `Day ${dNum}`}`;
         const dayEvents = dObj?.events || [];
 
-        if (dayEvents.length > 0) {
-          const mainTitles = dayEvents
-            .slice(0, 3)
-            .map((ev) => ev?.title)
-            .filter(Boolean)
-            .join(' / ');
-          if (mainTitles) {
-            highlightAgenda.push({
-              day: dayLabel,
-              summary: mainTitles
-            });
-          }
+        const coreTitles = dayEvents
+          .filter((ev) => !['plane', 'hotel', 'coffee'].includes(ev?.icon))
+          .map((ev) => String(ev?.title || '').trim())
+          .filter(Boolean);
+
+        if (coreTitles.length > 0) {
+          scheduleHighlights.push({
+            day: dayLabel,
+            text: coreTitles.slice(0, 3).join('  ·  ')
+          });
         }
 
         dayEvents.forEach((ev) => {
           const rawTitle = String(ev?.title || '').trim();
           if (!rawTitle) return;
-          const isNonCompany =
+          const isNonOrg =
             ['plane', 'hotel', 'coffee'].includes(ev?.icon) ||
             /機場|航班|飯店|入住|星鰻|燒肉|定食|排餐|美食區|自由用餐/.test(rawTitle);
-          if (!isNonCompany && !seenCompanies.has(rawTitle)) {
+          if (!isNonOrg && !seenCompanies.has(rawTitle) && visitCompanies.length < 9) {
             seenCompanies.add(rawTitle);
             visitCompanies.push(rawTitle);
           }
         });
       });
 
-      const displayCompanies =
+      const finalCompanies =
         visitCompanies.length > 0
-          ? visitCompanies.slice(0, 12)
-          : ['重點參訪企業名單（可於 PPT 自由編輯）'];
+          ? visitCompanies
+          : ['重點拜訪機構（可於 PPT 直接填寫）'];
 
-      const displayAgenda =
-        highlightAgenda.length > 0
-          ? highlightAgenda.slice(0, 6)
-          : [{ day: eventDate, summary: '依實際參訪與會議安排進行' }];
+      const finalHighlights =
+        scheduleHighlights.length > 0
+          ? scheduleHighlights.slice(0, 5)
+          : [{ day: eventDate, text: '依實際行程與會談安排進行' }];
 
-      // 2. 整理聯絡窗口資訊
+      // 2. 擷取聯絡窗口資訊
       const mainContact =
         (srcData.infoCards || []).find((c) => c.iconType === 'user') ||
         (srcData.infoCards || [])[0];
-      const contactItemsText = mainContact
-        ? (mainContact.items || []).map((it) => `${it.label}：${it.value}`).join('  |  ')
-        : '';
-      const contactSummary = mainContact
-        ? `${mainContact.title || '聯絡窗口'}：${mainContact.name || ''}${contactItemsText ? `（${contactItemsText}）` : ''}`
-        : '報名與洽詢：歡迎聯繫您的專屬業務窗口';
+      const contactLine = mainContact
+        ? `${mainContact.name || '業務窗口'}  |  ${(mainContact.items || [])
+            .map((it) => `${it.label}: ${it.value}`)
+            .join('  ·  ')}`
+        : '敬請聯繫您的專屬機構法人業務窗口';
 
       const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const safeTitle = String(eventTitle).replace(/[\\/:*?"<>|]/g, '_').slice(0, 24) || 'DM';
 
-      // 3. 產出「一頁式 9:16 垂直版可編輯 PPTX」（7.5 in x 13.333 in）
+      // 3. 產出「一頁式 9:16 垂直版可編輯 PPTX」（7.5 in x 13.333 in，外商投行簡約留白風）
       if (window.PptxGenJS) {
         const pptx = new window.PptxGenJS();
         pptx.defineLayout({ name: 'VERTICAL_DM_9_16', width: 7.5, height: 13.333 });
         pptx.layout = 'VERTICAL_DM_9_16';
         pptx.author = brandName;
-        pptx.title = `${brandName} ${eventTitle} DM`;
+        pptx.title = `${brandName} - ${eventTitle}`;
 
         const slide = pptx.addSlide();
-        slide.background = { color: 'F8FAFC' };
+        // 溫潤象牙白底色
+        slide.background = { color: 'FAF8F5' };
 
-        // 頂部券商橫幅
+        // 頂部極簡墨藍細條 + 香檳金線
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0, y: 0, w: 7.5, h: 0.72,
-          fill: { color: '0F2C59' }
-        });
-        slide.addText(brandName, {
-          x: 0.4, y: 0.14, w: 6.7, h: 0.44,
-          fontSize: 15, bold: true, color: 'FFFFFF', valign: 'middle'
-        });
-
-        // 主標題色塊區
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 0.95, w: 6.7, h: 1.55,
-          fill: { color: '163A70' }
+          x: 0, y: 0, w: 7.5, h: 0.52,
+          fill: { color: '0D1B2A' }
         });
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 2.5, w: 6.7, h: 0.08,
-          fill: { color: 'D97706' }
+          x: 0, y: 0.52, w: 7.5, h: 0.03,
+          fill: { color: 'B8924A' }
         });
-        slide.addText(`${brandName} ${eventLocation ? `${eventLocation} ` : ''}${eventTitle}`, {
-          x: 0.6, y: 1.12, w: 6.3, h: 0.85,
-          fontSize: 20, bold: true, color: 'FFFFFF', valign: 'middle'
-        });
-        slide.addText(`活動期間：${eventDate}   |   *最終行程與拜訪名單以實際安排為準`, {
-          x: 0.6, y: 2.0, w: 6.3, h: 0.36,
-          fontSize: 10, color: 'FDE68A', valign: 'middle'
+        slide.addText(`${brandName}   //   CORPORATE ACCESS`, {
+          x: 0.6, y: 0.1, w: 6.3, h: 0.32,
+          fontSize: 9, bold: true, color: 'D8BE8B', valign: 'middle'
         });
 
-        // 區塊一：活動與行程資訊
+        // 主標題區（大留白、高對比墨藍字 + 金色短飾線）
+        slide.addText('CLIENT INVITATION', {
+          x: 0.6, y: 1.05, w: 6.3, h: 0.28,
+          fontSize: 10, bold: true, color: 'B8924A'
+        });
+        slide.addText(eventTitle, {
+          x: 0.6, y: 1.38, w: 6.3, h: 1.15,
+          fontSize: 28, bold: true, color: '0D1B2A', valign: 'top'
+        });
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 2.8, w: 2.15, h: 1.85,
-          fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
-        });
-        slide.addText('活動與行程資訊', {
-          x: 0.52, y: 3.15, w: 1.9, h: 1.1,
-          fontSize: 13, bold: true, color: 'D97706', align: 'center', valign: 'middle'
+          x: 0.6, y: 2.68, w: 1.1, h: 0.04,
+          fill: { color: 'B8924A' }
         });
 
+        // 活動時間與地點摘要列
+        slide.addText(`${eventDate}    ·    ${eventLocation}`, {
+          x: 0.6, y: 2.9, w: 6.3, h: 0.42,
+          fontSize: 12.5, bold: true, color: '334155', valign: 'middle'
+        });
+
+        // 區塊一：精選拜訪／交流機構（柔和暖灰底色 + 3 欄清爽排版）
+        slide.addText('FEATURED INSTITUTIONS // 拜訪與交流機構', {
+          x: 0.6, y: 3.72, w: 6.3, h: 0.32,
+          fontSize: 9.5, bold: true, color: '8A6A2E'
+        });
         slide.addShape(pptx.ShapeType.rect, {
-          x: 2.65, y: 2.8, w: 4.45, h: 1.85,
-          fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
-        });
-        slide.addText(
-          [
-            `活動日期：${eventDate}`,
-            `考察地點：${eventLocation}`,
-            `行程天數：共 ${dayKeys.length || 1} 天`,
-            contactSummary
-          ].join('\n'),
-          {
-            x: 2.82, y: 2.9, w: 4.12, h: 1.65,
-            fontSize: 10.5, color: '0F172A', valign: 'middle'
-          }
-        );
-
-        // 區塊二：預計拜訪／參訪機構（3 欄網格）
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 4.82, w: 2.15, h: 3.25,
-          fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
-        });
-        slide.addText('預計拜訪／\n參訪機構', {
-          x: 0.52, y: 5.5, w: 1.9, h: 1.8,
-          fontSize: 13, bold: true, color: 'D97706', align: 'center', valign: 'middle'
+          x: 0.6, y: 4.1, w: 6.3, h: 2.85,
+          fill: { color: 'F2EFE9' }, line: { color: 'E2DDD5', width: 0.75 }
         });
 
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 2.65, y: 4.82, w: 4.45, h: 3.25,
-          fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
-        });
-
-        const colCount = 3;
-        const colW = 1.38;
-        const cellH = 0.68;
-        displayCompanies.forEach((compName, idx) => {
-          const colIdx = idx % colCount;
-          const rowIdx = Math.floor(idx / colCount);
-          const cx = 2.78 + colIdx * colW;
-          const cy = 4.98 + rowIdx * cellH;
-          slide.addText(`• ${compName}`, {
-            x: cx, y: cy, w: colW - 0.05, h: cellH - 0.06,
-            fontSize: 9.5, bold: true, color: '0F172A', valign: 'middle'
+        const colW = 1.92;
+        const rowH = 0.78;
+        finalCompanies.forEach((comp, idx) => {
+          const cIdx = idx % 3;
+          const rIdx = Math.floor(idx / 3);
+          slide.addText(comp, {
+            x: 0.82 + cIdx * colW,
+            y: 4.3 + rIdx * rowH,
+            w: colW - 0.12,
+            h: rowH - 0.12,
+            fontSize: 10.5,
+            bold: true,
+            color: '0D1B2A',
+            valign: 'middle'
           });
         });
 
-        // 區塊三：每日行程重點摘要
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 8.24, w: 2.15, h: 3.9,
-          fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
-        });
-        slide.addText('每日行程\n重點摘要', {
-          x: 0.52, y: 9.2, w: 1.9, h: 1.8,
-          fontSize: 13, bold: true, color: 'D97706', align: 'center', valign: 'middle'
+        // 區塊二：行程重點節奏（細水平分隔線，無厚重外框）
+        slide.addText('ITINERARY HIGHLIGHTS // 行程重點安排', {
+          x: 0.6, y: 7.35, w: 6.3, h: 0.32,
+          fontSize: 9.5, bold: true, color: '8A6A2E'
         });
 
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 2.65, y: 8.24, w: 4.45, h: 3.9,
-          fill: { color: 'FFFFFF' }, line: { color: 'CBD5E1', width: 1 }
-        });
-
-        const agendaStep = 3.65 / Math.max(displayAgenda.length, 1);
-        displayAgenda.forEach((ag, idx) => {
-          const ay = 8.36 + idx * agendaStep;
-          slide.addText(`${ag.day}  ${ag.summary}`, {
-            x: 2.8, y: ay, w: 4.15, h: agendaStep - 0.05,
-            fontSize: 9.8, color: '1E293B', valign: 'middle'
+        const hlStep = 3.55 / Math.max(finalHighlights.length, 1);
+        finalHighlights.forEach((hl, idx) => {
+          const yTop = 7.75 + idx * hlStep;
+          slide.addShape(pptx.ShapeType.line, {
+            x: 0.6, y: yTop, w: 6.3, h: 0,
+            line: { color: 'E2DDD5', width: 0.75 }
+          });
+          slide.addText(hl.day, {
+            x: 0.6, y: yTop + 0.08, w: 1.15, h: hlStep - 0.12,
+            fontSize: 11, bold: true, color: 'B8924A', valign: 'middle'
+          });
+          slide.addText(hl.text, {
+            x: 1.8, y: yTop + 0.08, w: 5.1, h: hlStep - 0.12,
+            fontSize: 11, color: '1E293B', valign: 'middle'
           });
         });
 
-        // 底部邀約列
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 0, y: 12.6, w: 7.5, h: 0.733,
-          fill: { color: '0F2C59' }
+        // 聯絡窗口區（極簡留白 + 頂部細金線）
+        slide.addShape(pptx.ShapeType.line, {
+          x: 0.6, y: 11.55, w: 6.3, h: 0,
+          line: { color: 'B8924A', width: 1.0 }
         });
-        slide.addText('如對本次參訪或會議有興趣，歡迎聯繫您的專屬業務窗口報名！', {
-          x: 0.4, y: 12.7, w: 6.7, h: 0.5,
-          fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
+        slide.addText('RSVP & CONTACT', {
+          x: 0.6, y: 11.68, w: 6.3, h: 0.26,
+          fontSize: 9, bold: true, color: '8A6A2E'
+        });
+        slide.addText(contactLine, {
+          x: 0.6, y: 11.96, w: 6.3, h: 0.42,
+          fontSize: 11, bold: true, color: '0D1B2A', valign: 'middle'
+        });
+
+        // 底部極簡註記
+        slide.addText('*實際拜訪時段、與會名單與議程以最終確認為準，歡迎洽詢您的專屬業務窗口。', {
+          x: 0.6, y: 12.68, w: 6.3, h: 0.35,
+          fontSize: 9, color: '64748B', valign: 'middle'
         });
 
         const pptBlob = await pptx.write({ outputType: 'blob' });
@@ -381,7 +365,7 @@ export default function App() {
           const canvas = await window.html2canvas(stageEl, {
             scale: 1,
             useCORS: true,
-            backgroundColor: '#F8FAFC'
+            backgroundColor: '#FAF8F5'
           });
           triggerFileDownload(canvas.toDataURL('image/png'), `${safeTitle}_垂直DM_${stamp}.png`);
         }
