@@ -1641,6 +1641,57 @@ const handleConfirmAdminPassword = (e) => {
         </div>
       )}
 
+      {/* 自訂密碼輸入 Modal */}
+      {showPasswordModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 no-print"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPasswordModal(false);
+          }}
+        >
+          <form
+            onSubmit={handleConfirmAdminPassword}
+            className="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-gray-200 space-y-3 font-mono"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center border-b pb-2">
+              <span className="text-sm font-black text-[#0F172A]">🔐 外資分析管理解鎖</span>
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500">請輸入管理密碼（預設為 1234）：</p>
+            <input
+              type="password"
+              autoFocus
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="輸入密碼"
+              className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 text-[#0F172A] focus:outline-none focus:border-[#2563EB]"
+            />
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg text-xs"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-2 rounded-lg text-xs"
+              >
+                確認解鎖
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* 外資矩陣行程總表 Modal */}
       {showMatrixModal && (
         <div 
@@ -1996,4 +2047,4 @@ const handleConfirmAdminPassword = (e) => {
     </>
   );
 }
-App.jsx 最外層 <
+
