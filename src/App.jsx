@@ -285,6 +285,8 @@ export default function App() {
     }
   };
   const [showMatrixModal, setShowMatrixModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
 
   useEffect(() => {
     if (modalContent || showMatrixModal) {
@@ -422,18 +424,25 @@ export default function App() {
   };
 
   const handleAdminLogin = () => {
-    if (isAdmin) {
-      setIsAdmin(false);
-      return;
-    }
-    const pwd = prompt("請輸入外資分析管理密碼：\n(提示: 預設為 1234)");
-    if (pwd === "1234") {
-      setIsAdmin(true);
-      alert("✅ 權限解鎖：管理員模式已啟用");
-    } else if (pwd !== null) {
-      alert("❌ 密碼錯誤");
-    }
-  };
+  if (isAdmin) {
+    setIsAdmin(false);
+    return;
+  }
+  setPasswordInput("");
+  setShowPasswordModal(true);
+};
+
+const handleConfirmAdminPassword = (e) => {
+  if (e) e.preventDefault();
+  if (passwordInput === "1234") {
+    setIsAdmin(true);
+    setShowPasswordModal(false);
+    setPasswordInput("");
+    alert("✅ 權限解鎖：管理員模式已啟用");
+  } else {
+    alert("❌ 密碼錯誤");
+  }
+};
 
   const handleEventChange = (day, index, field, value) => {
     setEditData(prev => {
@@ -1987,3 +1996,4 @@ export default function App() {
     </>
   );
 }
+App.jsx 最外層 <
