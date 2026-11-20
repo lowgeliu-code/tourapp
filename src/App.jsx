@@ -2094,7 +2094,7 @@ const handleConfirmAdminPassword = (e) => {
           </div>
         </div>
       )}
-      {/* 隱藏的直式 A4 DM 渲染畫布（827x1169，與匯出之 A4 PPTX 版面 100% 一致） */}
+      {/* 隱藏的直式 A4 DM 渲染畫布（827x1169，避開 table rowSpan 避免 html2canvas 漏字） */}
       {(() => {
         const dayKeys = Object.keys(displayData?.itinerary || {})
           .map(Number)
@@ -2172,26 +2172,26 @@ const handleConfirmAdminPassword = (e) => {
               overflow: 'hidden'
             }}
           >
-            {/* 頂部機構橫幅 */}
             <div>
+              {/* 頂部機構橫幅 */}
               <div
                 style={{
                   backgroundColor: '#0F2C59',
                   color: '#FFFFFF',
-                  height: '56px',
-                  padding: '0 42px',
+                  height: '52px',
+                  padding: '0 40px',
                   display: 'flex',
                   alignItems: 'center',
                   borderBottom: '4px solid #C8963E',
-                  fontSize: '15px',
+                  fontSize: '14.5px',
                   letterSpacing: '0.5px'
                 }}
               >
                 {displayData?.brandName || 'Lowge securities'}  |  INSTITUTIONAL CORPORATE ACCESS
               </div>
 
-              {/* 主內容區（上下置中留白平衡） */}
-              <div style={{ padding: '24px 42px 16px 42px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* 主內容區 */}
+              <div style={{ padding: '18px 40px 10px 40px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {/* 主標題 + 右上角置中日期地點 */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', gap: '12px' }}>
                   <div
@@ -2200,10 +2200,10 @@ const handleConfirmAdminPassword = (e) => {
                       backgroundColor: '#F8FAFC',
                       borderLeft: '10px solid #0F2C59',
                       borderBottom: '3px solid #C8963E',
-                      padding: '10px 18px',
+                      padding: '8px 16px',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '32px',
+                      fontSize: '30px',
                       color: '#0F2C59',
                       lineHeight: 1.2
                     }}
@@ -2212,7 +2212,7 @@ const handleConfirmAdminPassword = (e) => {
                   </div>
                   <div
                     style={{
-                      width: '213px',
+                      width: '210px',
                       backgroundColor: '#FEF3C7',
                       color: '#0F2C59',
                       display: 'flex',
@@ -2220,9 +2220,9 @@ const handleConfirmAdminPassword = (e) => {
                       justifyContent: 'center',
                       alignItems: 'center',
                       textAlign: 'center',
-                      fontSize: '13.5px',
-                      lineHeight: 1.4,
-                      padding: '8px'
+                      fontSize: '13px',
+                      lineHeight: 1.35,
+                      padding: '6px'
                     }}
                   >
                     <div>{displayData?.eventDate || '日期待確認'}</div>
@@ -2232,18 +2232,18 @@ const handleConfirmAdminPassword = (e) => {
 
                 {/* 一、活動與聯絡資訊 */}
                 <div>
-                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>一、活動與聯絡資訊</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', color: '#0F172A' }}>
+                  <div style={{ fontSize: '13.5px', color: '#0F2C59', marginBottom: '4px' }}>一、活動與聯絡資訊</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#0F172A' }}>
                     <tbody>
                       <tr>
-                        <td style={{ width: '110px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>活動期間</td>
-                        <td style={{ width: '261px', border: '1px solid #94A3B8', padding: '7px 10px' }}>{displayData?.eventDate || '日期待確認'}</td>
-                        <td style={{ width: '110px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>考察地點</td>
-                        <td style={{ border: '1px solid #94A3B8', padding: '7px 10px' }}>{displayData?.eventLocation || '詳情洽業務窗口'}</td>
+                        <td style={{ width: '105px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '5px 8px' }}>活動期間</td>
+                        <td style={{ width: '260px', border: '1px solid #94A3B8', padding: '5px 8px' }}>{displayData?.eventDate || '日期待確認'}</td>
+                        <td style={{ width: '105px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '5px 8px' }}>考察地點</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '5px 8px' }}>{displayData?.eventLocation || '詳情洽業務窗口'}</td>
                       </tr>
                       <tr>
-                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>聯絡窗口</td>
-                        <td colSpan={3} style={{ border: '1px solid #94A3B8', padding: '7px 10px' }}>{contactInfoText}</td>
+                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '5px 8px' }}>聯絡窗口</td>
+                        <td colSpan={3} style={{ border: '1px solid #94A3B8', padding: '5px 8px' }}>{contactInfoText}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2251,13 +2251,13 @@ const handleConfirmAdminPassword = (e) => {
 
                 {/* 二、導覽重點 */}
                 <div>
-                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>二、導覽重點</div>
+                  <div style={{ fontSize: '13.5px', color: '#0F2C59', marginBottom: '4px' }}>二、導覽重點</div>
                   <div
                     style={{
                       border: '1px solid #94A3B8',
-                      height: '104px',
-                      padding: '10px 12px',
-                      fontSize: '13px',
+                      height: '82px',
+                      padding: '8px 10px',
+                      fontSize: '12px',
                       color: '#475569'
                     }}
                   >
@@ -2265,72 +2265,96 @@ const handleConfirmAdminPassword = (e) => {
                   </div>
                 </div>
 
-                {/* 三、行程議程明細表 */}
+                {/* 三、行程議程明細表（每一天分組呈現，日期獨立在左側且不跨列合併，避免 html2canvas 漏字） */}
                 <div>
-                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>三、行程議程明細表</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.8px' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#0F2C59', color: '#FFFFFF' }}>
-                        <th style={{ width: '125px', border: '1px solid #94A3B8', padding: '6px 8px', textAlign: 'center' }}>日期</th>
-                        <th style={{ border: '1px solid #94A3B8', padding: '6px 10px', textAlign: 'left' }}>行程／參訪企業與接洽窗口</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeDays.length === 0 ? (
-                        <tr>
-                          <td style={{ border: '1px solid #94A3B8', padding: '8px', textAlign: 'center', color: '#0F2C59' }}>
-                            {displayData?.eventDate || '日期待確認'}
-                          </td>
-                          <td style={{ border: '1px solid #94A3B8', padding: '8px', color: '#0F172A' }}>
-                            請填寫參訪企業與接洽窗口
-                          </td>
-                        </tr>
-                      ) : (
-                        activeDays.map((grp, gIdx) => {
-                          const rowBg = gIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-                          return grp.items.map((itemText, iIdx) => (
-                            <tr key={`${grp.day}-${iIdx}`} style={{ backgroundColor: rowBg }}>
-                              {iIdx === 0 && (
-                                <td
-                                  rowSpan={grp.items.length}
+                  <div style={{ fontSize: '13.5px', color: '#0F2C59', marginBottom: '4px' }}>三、行程議程明細表</div>
+                  <div
+                    style={{
+                      backgroundColor: '#0F2C59',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      fontSize: '12px',
+                      border: '1px solid #94A3B8'
+                    }}
+                  >
+                    <div style={{ width: '125px', padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #94A3B8' }}>日期</div>
+                    <div style={{ flex: 1, padding: '5px 10px' }}>行程／參訪企業與接洽窗口</div>
+                  </div>
+                  <div style={{ borderLeft: '1px solid #94A3B8', borderRight: '1px solid #94A3B8', borderBottom: '1px solid #94A3B8' }}>
+                    {activeDays.length === 0 ? (
+                      <div style={{ display: 'flex', fontSize: '11.5px', borderTop: '1px solid #94A3B8' }}>
+                        <div style={{ width: '125px', padding: '6px 8px', textAlign: 'center', color: '#0F2C59', borderRight: '1px solid #94A3B8' }}>
+                          {displayData?.eventDate || '日期待確認'}
+                        </div>
+                        <div style={{ flex: 1, padding: '6px 10px', color: '#0F172A' }}>請填寫參訪企業與接洽窗口</div>
+                      </div>
+                    ) : (
+                      activeDays.map((grp, gIdx) => {
+                        const rowBg = gIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+                        return (
+                          <div
+                            key={grp.day}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              backgroundColor: rowBg,
+                              borderTop: gIdx === 0 ? 'none' : '1px solid #94A3B8',
+                              fontSize: '11.2px'
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '125px',
+                                alignSelf: 'stretch',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '4px 6px',
+                                color: '#0F2C59',
+                                borderRight: '1px solid #94A3B8',
+                                flexShrink: 0
+                              }}
+                            >
+                              {grp.day}
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                              {grp.items.map((itemText, iIdx) => (
+                                <div
+                                  key={`${grp.day}-${iIdx}`}
                                   style={{
-                                    border: '1px solid #94A3B8',
-                                    padding: '6px 8px',
-                                    textAlign: 'center',
-                                    verticalAlign: 'middle',
-                                    color: '#0F2C59'
+                                    padding: '4px 10px',
+                                    color: '#0F172A',
+                                    borderTop: iIdx === 0 ? 'none' : '1px solid #CBD5E1',
+                                    lineHeight: 1.3
                                   }}
                                 >
-                                  {grp.day}
-                                </td>
-                              )}
-                              <td style={{ border: '1px solid #94A3B8', padding: '5.5px 10px', color: '#0F172A' }}>
-                                {itemText}
-                              </td>
-                            </tr>
-                          ));
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                                  {itemText}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
 
                 {/* 四、行程資訊 */}
                 <div>
-                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>四、行程資訊</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#0F172A' }}>
+                  <div style={{ fontSize: '13.5px', color: '#0F2C59', marginBottom: '4px' }}>四、行程資訊</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.8px', color: '#0F172A' }}>
                     <tbody>
                       <tr>
-                        <td style={{ width: '125px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '10px' }}>機票</td>
-                        <td style={{ border: '1px solid #94A3B8', padding: '10px' }}>{flightSummary}</td>
+                        <td style={{ width: '125px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>機票</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '7px 10px' }}>{flightSummary}</td>
                       </tr>
                       <tr>
-                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '10px' }}>飯店</td>
-                        <td style={{ border: '1px solid #94A3B8', padding: '10px' }}>{hotelSummary}</td>
+                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>飯店</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '7px 10px' }}>{hotelSummary}</td>
                       </tr>
                       <tr>
-                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '10px' }}>預計費用</td>
-                        <td style={{ border: '1px solid #94A3B8', padding: '10px', color: '#475569' }}>（請填寫預計費用或分攤說明）</td>
+                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>預計費用</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '7px 10px', color: '#475569' }}>（請填寫預計費用或分攤說明）</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2343,12 +2367,12 @@ const handleConfirmAdminPassword = (e) => {
               style={{
                 backgroundColor: '#0F2C59',
                 color: '#FFFFFF',
-                height: '52px',
+                height: '46px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '12px',
-                padding: '0 42px'
+                fontSize: '11.5px',
+                padding: '0 40px'
               }}
             >
               *本行程表僅供機構投資人邀約參考，實際拜訪與議程安排以最終確認為準。
