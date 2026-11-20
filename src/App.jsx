@@ -233,14 +233,14 @@ export default function App() {
       const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const safeTitle = String(eventTitle).replace(/[\\/:*?"<>|]/g, '_').slice(0, 24) || 'DM';
 
-      // 若勾選「僅匯出圖片 (PNG)」：只產出 PNG 圖片，不產出 PPTX
+      // 若勾選「僅匯出圖片 (PNG)」：產出與 A4 PPT 版面完全一致的高解析 PNG 圖片
       if (includePngWithDm) {
         await loadScriptOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
         const stageEl = document.getElementById('vertical-dm-export-stage');
         if (stageEl && window.html2canvas) {
           await new Promise((resolve) => setTimeout(resolve, 200));
           const canvas = await window.html2canvas(stageEl, {
-            scale: 1,
+            scale: 2,
             useCORS: true,
             backgroundColor: '#FFFFFF'
           });
@@ -249,7 +249,7 @@ export default function App() {
         return;
       }
 
-      // 預設未勾選：只產出「一頁式直式 A4 可編輯 PPTX」
+      // 預設未勾選：產出上下置中平衡的直式 A4 可編輯 PPTX（8.27 in x 11.69 in）
       await loadScriptOnce('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');
       if (window.PptxGenJS) {
         const pptx = new window.PptxGenJS();
@@ -269,37 +269,37 @@ export default function App() {
 
         // 頂部機構橫幅
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0, y: 0, w: 8.27, h: 0.48,
+          x: 0, y: 0, w: 8.27, h: 0.56,
           fill: { color: navyHeader }
         });
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0, y: 0.48, w: 8.27, h: 0.04,
+          x: 0, y: 0.56, w: 8.27, h: 0.04,
           fill: { color: goldAccent }
         });
         slide.addText(`${brandName}  |  INSTITUTIONAL CORPORATE ACCESS`, {
-          x: 0.4, y: 0.08, w: 7.47, h: 0.32,
-          fontFace, fontSize: 10.5, bold: true, color: 'FFFFFF', valign: 'middle'
+          x: 0.42, y: 0.1, w: 7.43, h: 0.36,
+          fontFace, fontSize: 11, bold: true, color: 'FFFFFF', valign: 'middle'
         });
 
-        // 顯眼活動主標題區（加大字級 + 左側深藍強調條 + 底部金線）與右上角置中日期地點
+        // 顯眼活動主標題區（上下置中留白平衡）+ 右上角置中日期地點
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 0.58, w: 5.25, h: 0.56,
+          x: 0.42, y: 0.82, w: 5.2, h: 0.64,
           fill: { color: 'F8FAFC' }
         });
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 0.58, w: 0.1, h: 0.56,
+          x: 0.42, y: 0.82, w: 0.1, h: 0.64,
           fill: { color: navyHeader }
         });
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0.4, y: 1.12, w: 5.25, h: 0.03,
+          x: 0.42, y: 1.43, w: 5.2, h: 0.03,
           fill: { color: goldAccent }
         });
         slide.addText(eventTitle, {
-          x: 0.6, y: 0.6, w: 4.98, h: 0.5,
+          x: 0.62, y: 0.85, w: 4.92, h: 0.56,
           fontFace, fontSize: 25, bold: true, color: navyHeader, valign: 'middle'
         });
         slide.addText(`${eventDate}\n${eventLocation}`, {
-          x: 5.75, y: 0.58, w: 2.12, h: 0.56,
+          x: 5.72, y: 0.82, w: 2.13, h: 0.64,
           fontFace, fontSize: 10, bold: true, color: navyHeader,
           align: 'center', valign: 'middle',
           fill: { color: 'FEF3C7' }
@@ -307,7 +307,7 @@ export default function App() {
 
         // 一、活動與聯絡資訊
         slide.addText('一、活動與聯絡資訊', {
-          x: 0.4, y: 1.24, w: 7.47, h: 0.24,
+          x: 0.42, y: 1.66, w: 7.43, h: 0.26,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -325,10 +325,10 @@ export default function App() {
             ]
           ],
           {
-            x: 0.4, y: 1.5, w: 7.47,
-            colW: [1.1, 2.63, 1.1, 2.64],
-            rowH: [0.3, 0.3],
-            fontFace, fontSize: 9, bold: true, color: '0F172A',
+            x: 0.42, y: 1.94, w: 7.43,
+            colW: [1.1, 2.61, 1.1, 2.62],
+            rowH: [0.34, 0.34],
+            fontFace, fontSize: 9.2, bold: true, color: '0F172A',
             valign: 'middle',
             border: { type: 'solid', pt: 0.75, color: borderColor }
           }
@@ -336,7 +336,7 @@ export default function App() {
 
         // 二、導覽重點（留白區供填寫簡介）
         slide.addText('二、導覽重點', {
-          x: 0.4, y: 2.18, w: 7.47, h: 0.24,
+          x: 0.42, y: 2.84, w: 7.43, h: 0.26,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -350,9 +350,9 @@ export default function App() {
             ]
           ],
           {
-            x: 0.4, y: 2.44, w: 7.47,
-            colW: [7.47],
-            rowH: [1.02],
+            x: 0.42, y: 3.12, w: 7.43,
+            colW: [7.43],
+            rowH: [1.1],
             fontFace, fontSize: 9.5, bold: true,
             border: { type: 'solid', pt: 0.75, color: borderColor }
           }
@@ -360,7 +360,7 @@ export default function App() {
 
         // 三、行程議程明細表
         slide.addText('三、行程議程明細表', {
-          x: 0.4, y: 3.55, w: 7.47, h: 0.24,
+          x: 0.42, y: 4.44, w: 7.43, h: 0.26,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -415,14 +415,14 @@ export default function App() {
         }
 
         const totalDataRows = Math.max(agendaRows.length - 1, 1);
-        const agendaTableH = 4.58;
-        const headerH = 0.28;
-        const perDataRowH = Math.max(0.26, (agendaTableH - headerH) / totalDataRows);
+        const agendaTableH = 4.32;
+        const headerH = 0.3;
+        const perDataRowH = Math.max(0.25, (agendaTableH - headerH) / totalDataRows);
         const rowHeights = [headerH, ...Array(totalDataRows).fill(perDataRowH)];
 
         slide.addTable(agendaRows, {
-          x: 0.4, y: 3.81, w: 7.47,
-          colW: [1.25, 6.22],
+          x: 0.42, y: 4.72, w: 7.43,
+          colW: [1.25, 6.18],
           rowH: rowHeights,
           fontFace, fontSize: 8.8, bold: true,
           valign: 'middle',
@@ -430,9 +430,9 @@ export default function App() {
         });
 
         // 四、行程資訊（機票、飯店、預計費用）
-        const infoSecY = 8.49;
+        const infoSecY = 9.26;
         slide.addText('四、行程資訊', {
-          x: 0.4, y: infoSecY, w: 7.47, h: 0.24,
+          x: 0.42, y: infoSecY, w: 7.43, h: 0.26,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -452,23 +452,23 @@ export default function App() {
             ]
           ],
           {
-            x: 0.4, y: infoSecY + 0.26, w: 7.47,
-            colW: [1.25, 6.22],
-            rowH: [0.5, 0.5, 0.5],
+            x: 0.42, y: infoSecY + 0.28, w: 7.43,
+            colW: [1.25, 6.18],
+            rowH: [0.46, 0.46, 0.46],
             fontFace, fontSize: 9, bold: true, color: '0F172A',
             valign: 'middle',
             border: { type: 'solid', pt: 0.75, color: borderColor }
           }
         );
 
-        // 底部警語
+        // 底部警語（與上方四區塊保持均勻間距）
         slide.addShape(pptx.ShapeType.rect, {
-          x: 0, y: 11.22, w: 8.27, h: 0.47,
+          x: 0, y: 11.16, w: 8.27, h: 0.53,
           fill: { color: navyHeader }
         });
         slide.addText('*本行程表僅供機構投資人邀約參考，實際拜訪與議程安排以最終確認為準。', {
-          x: 0.4, y: 11.27, w: 7.47, h: 0.36,
-          fontFace, fontSize: 8.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
+          x: 0.42, y: 11.23, w: 7.43, h: 0.38,
+          fontFace, fontSize: 8.8, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
         });
 
         const pptBlob = await pptx.write({ outputType: 'blob' });
@@ -2094,181 +2094,268 @@ const handleConfirmAdminPassword = (e) => {
           </div>
         </div>
       )}
-      {/* 隱藏的 9:16 垂直版 DM 渲染畫布（供匯出可直接轉傳的 PNG 檔） */}
-      <div
-        id="vertical-dm-export-stage"
-        aria-hidden="true"
-        className="no-print"
-        style={{
-          position: 'fixed',
-          left: '-9999px',
-          top: 0,
-          width: '900px',
-          height: '1600px',
-          backgroundColor: '#F8FAFC',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif',
-          boxSizing: 'border-box',
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: '#0F2C59',
-            color: '#FFFFFF',
-            padding: '28px 40px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderBottom: '6px solid #D97706'
-          }}
-        >
-          <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '0.5px' }}>
-            {displayData?.brandName || 'Lowge securities'}
-          </div>
+      {/* 隱藏的直式 A4 DM 渲染畫布（827x1169，與匯出之 A4 PPTX 版面 100% 一致） */}
+      {(() => {
+        const dayKeys = Object.keys(displayData?.itinerary || {})
+          .map(Number)
+          .sort((a, b) => a - b);
+
+        const flightNotes = [];
+        const hotelNotes = [];
+        const groupedRows = [];
+
+        dayKeys.forEach((dNum) => {
+          const dObj = displayData.itinerary[dNum];
+          const dayLabel = `${dObj?.date || `D${dNum}`}(${dObj?.weekday || ''})`;
+          const dayCoreItems = [];
+
+          (dObj?.events || []).forEach((ev) => {
+            const rawTitle = String(ev?.title || '').trim();
+            if (!rawTitle) return;
+            const subClean = String(ev?.subtitle || '').replace(/\n+/g, ' / ').trim();
+
+            if (ev?.icon === 'plane' || /航班|機票|航空|機場/.test(rawTitle)) {
+              flightNotes.push(subClean ? `${rawTitle}（${subClean}）` : rawTitle);
+            }
+            if (ev?.icon === 'hotel' || /飯店|酒店|入住|STAY/i.test(rawTitle)) {
+              hotelNotes.push(subClean ? `${rawTitle}（${subClean}）` : rawTitle);
+            }
+
+            const isExcluded =
+              ['plane', 'hotel', 'coffee'].includes(ev?.icon) ||
+              /機場|航班|飯店|酒店|入住|星鰻|燒肉|定食|排餐|美食區|自由用餐|午餐|晚餐|早餐/.test(rawTitle);
+
+            if (!isExcluded) {
+              dayCoreItems.push(subClean ? `${rawTitle}（${subClean}）` : rawTitle);
+            }
+          });
+
+          if (dayCoreItems.length > 0) {
+            groupedRows.push({
+              day: dayLabel,
+              items: dayCoreItems.slice(0, 4)
+            });
+          }
+        });
+
+        const flightSummary = flightNotes.length > 0 ? flightNotes.slice(0, 2).join('；') : '請填寫航班資訊';
+        const hotelSummary = hotelNotes.length > 0 ? hotelNotes.slice(0, 2).join('；') : '請填寫飯店資訊';
+        const mainContact =
+          (displayData?.infoCards || []).find((c) => c.iconType === 'user') ||
+          (displayData?.infoCards || [])[0];
+        const contactInfoText = mainContact
+          ? `${mainContact.name || ''}｜${(mainContact.items || [])
+              .map((it) => `${it.label} ${it.value}`)
+              .join(' / ')}`
+          : '請聯繫您的專屬業務窗口';
+
+        const activeDays = groupedRows.slice(0, 6);
+
+        return (
           <div
+            id="vertical-dm-export-stage"
+            aria-hidden="true"
+            className="no-print"
             style={{
-              backgroundColor: '#D97706',
-              color: '#FFFFFF',
-              padding: '8px 18px',
-              borderRadius: '999px',
-              fontSize: '20px',
-              fontWeight: 700
+              position: 'fixed',
+              left: '-9999px',
+              top: 0,
+              width: '827px',
+              height: '1169px',
+              backgroundColor: '#FFFFFF',
+              fontFamily: '"Microsoft JhengHei", "微軟正黑體", sans-serif',
+              fontWeight: 700,
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              overflow: 'hidden'
             }}
           >
-            {displayData?.eventDate || '日期待確認'}
-          </div>
-        </div>
+            {/* 頂部機構橫幅 */}
+            <div>
+              <div
+                style={{
+                  backgroundColor: '#0F2C59',
+                  color: '#FFFFFF',
+                  height: '56px',
+                  padding: '0 42px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '4px solid #C8963E',
+                  fontSize: '15px',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                {displayData?.brandName || 'Lowge securities'}  |  INSTITUTIONAL CORPORATE ACCESS
+              </div>
 
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #163A70 0%, #2563EB 100%)',
-            color: '#FFFFFF',
-            padding: '42px 40px 36px 40px'
-          }}
-        >
-          <div style={{ fontSize: '18px', letterSpacing: '2px', color: '#FDE68A', fontWeight: 700, marginBottom: '10px' }}>
-            CORPORATE ACCESS & CLIENT INVITATION
-          </div>
-          <div
-            style={{
-              fontSize: '52px',
-              fontWeight: 900,
-              lineHeight: 1.2,
-              marginBottom: '16px',
-              borderLeft: '12px solid #FDE68A',
-              paddingLeft: '18px',
-              borderBottom: '4px solid #FDE68A',
-              paddingBottom: '10px'
-            }}
-          >
-            {displayData?.eventTitle || '機構法人專屬參訪行程'}
-          </div>
-          <div style={{ fontSize: '21px', color: '#E2E8F0', lineHeight: 1.45 }}>
-            地點：{displayData?.eventLocation || '詳情洽業務窗口'}
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: '32px 40px 96px 40px',
-            height: '1120px',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}
-        >
-          <div
-            style={{
-              fontSize: '24px',
-              fontWeight: 800,
-              color: '#0F2C59',
-              borderLeft: '8px solid #D97706',
-              paddingLeft: '14px'
-            }}
-          >
-            行程亮點與拜訪／議程資訊
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-            {Object.keys(displayData?.itinerary || {})
-              .map(Number)
-              .sort((a, b) => a - b)
-              .flatMap((dNum) => {
-                const dObj = displayData.itinerary[dNum];
-                const dayPrefix = dObj?.date || `D${dNum}`;
-                return (dObj?.events || []).map((ev, idx) => ({
-                  key: `${dNum}-${idx}`,
-                  badge: `${dayPrefix} ${ev?.time || ''}`.trim(),
-                  detail: ev?.title || ''
-                }));
-              })
-              .filter((row) => row.detail)
-              .slice(0, 7)
-              .map((row) => (
-                <div
-                  key={row.key}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1.5px solid #CBD5E1',
-                    borderLeft: '10px solid #D97706',
-                    borderRadius: '10px',
-                    padding: '16px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '18px'
-                  }}
-                >
-                  <div style={{ minWidth: '175px', fontSize: '19px', fontWeight: 800, color: '#B45309' }}>
-                    {row.badge}
+              {/* 主內容區（上下置中留白平衡） */}
+              <div style={{ padding: '24px 42px 16px 42px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* 主標題 + 右上角置中日期地點 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', gap: '12px' }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#F8FAFC',
+                      borderLeft: '10px solid #0F2C59',
+                      borderBottom: '3px solid #C8963E',
+                      padding: '10px 18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '32px',
+                      color: '#0F2C59',
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {displayData?.eventTitle || '機構法人專屬參訪交流'}
                   </div>
-                  <div style={{ fontSize: '21px', fontWeight: 600, color: '#0F172A', lineHeight: 1.35, flex: 1 }}>
-                    {row.detail}
+                  <div
+                    style={{
+                      width: '213px',
+                      backgroundColor: '#FEF3C7',
+                      color: '#0F2C59',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      fontSize: '13.5px',
+                      lineHeight: 1.4,
+                      padding: '8px'
+                    }}
+                  >
+                    <div>{displayData?.eventDate || '日期待確認'}</div>
+                    <div>{displayData?.eventLocation || '詳情洽業務窗口'}</div>
                   </div>
                 </div>
-              ))}
-          </div>
 
-          <div
-            style={{
-              backgroundColor: '#EEF2F6',
-              border: '1px solid #CBD5E1',
-              borderRadius: '10px',
-              padding: '16px 20px',
-              fontSize: '19px',
-              color: '#1E293B',
-              lineHeight: 1.5
-            }}
-          >
-            {(() => {
-              const mainContact =
-                (displayData?.infoCards || []).find((c) => c.iconType === 'user') ||
-                (displayData?.infoCards || [])[0];
-              if (!mainContact) return '歡迎聯繫您的專屬業務窗口報名與洽詢';
-              const details = (mainContact.items || []).map((it) => `${it.label} ${it.value}`).join(' / ');
-              return `聯絡窗口：${mainContact.name || ''} ${details}`.trim();
-            })()}
-          </div>
-        </div>
+                {/* 一、活動與聯絡資訊 */}
+                <div>
+                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>一、活動與聯絡資訊</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', color: '#0F172A' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ width: '110px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>活動期間</td>
+                        <td style={{ width: '261px', border: '1px solid #94A3B8', padding: '7px 10px' }}>{displayData?.eventDate || '日期待確認'}</td>
+                        <td style={{ width: '110px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>考察地點</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '7px 10px' }}>{displayData?.eventLocation || '詳情洽業務窗口'}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '7px 10px' }}>聯絡窗口</td>
+                        <td colSpan={3} style={{ border: '1px solid #94A3B8', padding: '7px 10px' }}>{contactInfoText}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#0F2C59',
-            color: '#FFFFFF',
-            padding: '22px 40px',
-            textAlign: 'center',
-            fontSize: '20px',
-            fontWeight: 600,
-            borderTop: '4px solid #D97706'
-          }}
-        >
-          歡迎聯繫您的專屬業務窗口報名與洽詢（可直接轉傳此圖或使用 PPT 編輯調整）
-        </div>
-      </div>
+                {/* 二、導覽重點 */}
+                <div>
+                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>二、導覽重點</div>
+                  <div
+                    style={{
+                      border: '1px solid #94A3B8',
+                      height: '104px',
+                      padding: '10px 12px',
+                      fontSize: '13px',
+                      color: '#475569'
+                    }}
+                  >
+                    （請在此填寫本次活動／展會／參訪導覽簡介）
+                  </div>
+                </div>
+
+                {/* 三、行程議程明細表 */}
+                <div>
+                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>三、行程議程明細表</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.8px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#0F2C59', color: '#FFFFFF' }}>
+                        <th style={{ width: '125px', border: '1px solid #94A3B8', padding: '6px 8px', textAlign: 'center' }}>日期</th>
+                        <th style={{ border: '1px solid #94A3B8', padding: '6px 10px', textAlign: 'left' }}>行程／參訪企業與接洽窗口</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeDays.length === 0 ? (
+                        <tr>
+                          <td style={{ border: '1px solid #94A3B8', padding: '8px', textAlign: 'center', color: '#0F2C59' }}>
+                            {displayData?.eventDate || '日期待確認'}
+                          </td>
+                          <td style={{ border: '1px solid #94A3B8', padding: '8px', color: '#0F172A' }}>
+                            請填寫參訪企業與接洽窗口
+                          </td>
+                        </tr>
+                      ) : (
+                        activeDays.map((grp, gIdx) => {
+                          const rowBg = gIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+                          return grp.items.map((itemText, iIdx) => (
+                            <tr key={`${grp.day}-${iIdx}`} style={{ backgroundColor: rowBg }}>
+                              {iIdx === 0 && (
+                                <td
+                                  rowSpan={grp.items.length}
+                                  style={{
+                                    border: '1px solid #94A3B8',
+                                    padding: '6px 8px',
+                                    textAlign: 'center',
+                                    verticalAlign: 'middle',
+                                    color: '#0F2C59'
+                                  }}
+                                >
+                                  {grp.day}
+                                </td>
+                              )}
+                              <td style={{ border: '1px solid #94A3B8', padding: '5.5px 10px', color: '#0F172A' }}>
+                                {itemText}
+                              </td>
+                            </tr>
+                          ));
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 四、行程資訊 */}
+                <div>
+                  <div style={{ fontSize: '14px', color: '#0F2C59', marginBottom: '5px' }}>四、行程資訊</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#0F172A' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ width: '125px', backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '10px' }}>機票</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '10px' }}>{flightSummary}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '10px' }}>飯店</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '10px' }}>{hotelSummary}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ backgroundColor: '#F1F5F9', color: '#0F2C59', border: '1px solid #94A3B8', padding: '10px' }}>預計費用</td>
+                        <td style={{ border: '1px solid #94A3B8', padding: '10px', color: '#475569' }}>（請填寫預計費用或分攤說明）</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* 底部警語 */}
+            <div
+              style={{
+                backgroundColor: '#0F2C59',
+                color: '#FFFFFF',
+                height: '52px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                padding: '0 42px'
+              }}
+            >
+              *本行程表僅供機構投資人邀約參考，實際拜訪與議程安排以最終確認為準。
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
