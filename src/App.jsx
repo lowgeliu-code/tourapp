@@ -159,16 +159,6 @@ export default function App() {
  const handleExportVerticalDm = async () => {
     try {
       setExportingDm(true);
-      const tasks = [
-        loadScriptOnce('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js')
-      ];
-      if (includePngWithDm) {
-        tasks.push(
-          loadScriptOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js')
-        );
-      }
-      await Promise.all(tasks);
-
       const srcData = displayData || appData || defaultData;
       const brandName = srcData.brandName || 'Lowge securities';
       const eventTitle = srcData.eventTitle || '機構法人專屬參訪交流';
@@ -179,7 +169,6 @@ export default function App() {
         .map(Number)
         .sort((a, b) => a - b);
 
-      // 1. 擷取「機票」、「飯店」資訊與「非交通/非餐飲/非飯店」之核心行程（依天數保留合併資訊）
       const flightNotes = [];
       const hotelNotes = [];
       const groupedAgendaRows = [];
@@ -219,7 +208,6 @@ export default function App() {
         }
       });
 
-      // 從 infoCards 補充備援航班/飯店資訊
       (srcData.infoCards || []).forEach((card) => {
         const cTitle = String(card?.title || '');
         const cText = [card?.name, ...(card?.items || []).map((i) => `${i.label} ${i.value}`)]
@@ -233,7 +221,6 @@ export default function App() {
       const flightSummary = flightNotes.length > 0 ? flightNotes.slice(0, 2).join('；') : '請填寫航班資訊';
       const hotelSummary = hotelNotes.length > 0 ? hotelNotes.slice(0, 2).join('；') : '請填寫飯店資訊';
 
-      // 2. 擷取聯絡窗口資訊
       const mainContact =
         (srcData.infoCards || []).find((c) => c.iconType === 'user') ||
         (srcData.infoCards || [])[0];
@@ -246,7 +233,24 @@ export default function App() {
       const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const safeTitle = String(eventTitle).replace(/[\\/:*?"<>|]/g, '_').slice(0, 24) || 'DM';
 
-      // 3. 產出「一頁式直式 A4 可編輯 PPTX」（8.27 in x 11.69 in，字體統一微軟正黑體粗體）
+      // 若勾選「僅匯出圖片 (PNG)」：只產出 PNG 圖片，不產出 PPTX
+      if (includePngWithDm) {
+        await loadScriptOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+        const stageEl = document.getElementById('vertical-dm-export-stage');
+        if (stageEl && window.html2canvas) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          const canvas = await window.html2canvas(stageEl, {
+            scale: 1,
+            useCORS: true,
+            backgroundColor: '#FFFFFF'
+          });
+          triggerFileDownload(canvas.toDataURL('image/png'), `${safeTitle}_A4行程DM_${stamp}.png`);
+        }
+        return;
+      }
+
+      // 預設未勾選：只產出「一頁式直式 A4 可編輯 PPTX」
+      await loadScriptOnce('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');
       if (window.PptxGenJS) {
         const pptx = new window.PptxGenJS();
         pptx.defineLayout({ name: 'A4_PORTRAIT_DM', width: 8.27, height: 11.69 });
@@ -277,21 +281,33 @@ export default function App() {
           fontFace, fontSize: 10.5, bold: true, color: 'FFFFFF', valign: 'middle'
         });
 
-        // 活動主標題與右上角置中日期地點
+        // 顯眼活動主標題區（加大字級 + 左側深藍強調條 + 底部金線）與右上角置中日期地點
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0.4, y: 0.58, w: 5.25, h: 0.56,
+          fill: { color: 'F8FAFC' }
+        });
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0.4, y: 0.58, w: 0.1, h: 0.56,
+          fill: { color: navyHeader }
+        });
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0.4, y: 1.12, w: 5.25, h: 0.03,
+          fill: { color: goldAccent }
+        });
         slide.addText(eventTitle, {
-          x: 0.4, y: 0.62, w: 5.2, h: 0.46,
-          fontFace, fontSize: 19, bold: true, color: navyHeader, valign: 'middle'
+          x: 0.6, y: 0.6, w: 4.98, h: 0.5,
+          fontFace, fontSize: 25, bold: true, color: navyHeader, valign: 'middle'
         });
         slide.addText(`${eventDate}\n${eventLocation}`, {
-          x: 5.7, y: 0.62, w: 2.17, h: 0.46,
-          fontFace, fontSize: 9.5, bold: true, color: navyHeader,
+          x: 5.75, y: 0.58, w: 2.12, h: 0.56,
+          fontFace, fontSize: 10, bold: true, color: navyHeader,
           align: 'center', valign: 'middle',
           fill: { color: 'FEF3C7' }
         });
 
         // 一、活動與聯絡資訊
         slide.addText('一、活動與聯絡資訊', {
-          x: 0.4, y: 1.14, w: 7.47, h: 0.24,
+          x: 0.4, y: 1.24, w: 7.47, h: 0.24,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -309,7 +325,7 @@ export default function App() {
             ]
           ],
           {
-            x: 0.4, y: 1.4, w: 7.47,
+            x: 0.4, y: 1.5, w: 7.47,
             colW: [1.1, 2.63, 1.1, 2.64],
             rowH: [0.3, 0.3],
             fontFace, fontSize: 9, bold: true, color: '0F172A',
@@ -320,7 +336,7 @@ export default function App() {
 
         // 二、導覽重點（留白區供填寫簡介）
         slide.addText('二、導覽重點', {
-          x: 0.4, y: 2.08, w: 7.47, h: 0.24,
+          x: 0.4, y: 2.18, w: 7.47, h: 0.24,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -334,17 +350,17 @@ export default function App() {
             ]
           ],
           {
-            x: 0.4, y: 2.34, w: 7.47,
+            x: 0.4, y: 2.44, w: 7.47,
             colW: [7.47],
-            rowH: [1.05],
+            rowH: [1.02],
             fontFace, fontSize: 9.5, bold: true,
             border: { type: 'solid', pt: 0.75, color: borderColor }
           }
         );
 
-        // 三、行程議程明細表（無交通/飯店/吃飯、無詳細時間欄、同日合併日期格）
+        // 三、行程議程明細表
         slide.addText('三、行程議程明細表', {
-          x: 0.4, y: 3.48, w: 7.47, h: 0.24,
+          x: 0.4, y: 3.55, w: 7.47, h: 0.24,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
         });
 
@@ -399,13 +415,13 @@ export default function App() {
         }
 
         const totalDataRows = Math.max(agendaRows.length - 1, 1);
-        const agendaTableH = 4.65;
+        const agendaTableH = 4.58;
         const headerH = 0.28;
         const perDataRowH = Math.max(0.26, (agendaTableH - headerH) / totalDataRows);
         const rowHeights = [headerH, ...Array(totalDataRows).fill(perDataRowH)];
 
         slide.addTable(agendaRows, {
-          x: 0.4, y: 3.74, w: 7.47,
+          x: 0.4, y: 3.81, w: 7.47,
           colW: [1.25, 6.22],
           rowH: rowHeights,
           fontFace, fontSize: 8.8, bold: true,
@@ -414,7 +430,7 @@ export default function App() {
         });
 
         // 四、行程資訊（機票、飯店、預計費用）
-        const infoSecY = 8.48;
+        const infoSecY = 8.49;
         slide.addText('四、行程資訊', {
           x: 0.4, y: infoSecY, w: 7.47, h: 0.24,
           fontFace, fontSize: 10.5, bold: true, color: navyHeader
@@ -445,7 +461,7 @@ export default function App() {
           }
         );
 
-        // 底部警語（已刪除「可於PPT直接修改」等贅字）
+        // 底部警語
         slide.addShape(pptx.ShapeType.rect, {
           x: 0, y: 11.22, w: 8.27, h: 0.47,
           fill: { color: navyHeader }
@@ -457,20 +473,6 @@ export default function App() {
 
         const pptBlob = await pptx.write({ outputType: 'blob' });
         triggerFileDownload(pptBlob, `${safeTitle}_A4行程DM_${stamp}.pptx`);
-      }
-
-      // 4. 僅在勾選「同時下載 PNG 圖片」時才下載圖片
-      if (includePngWithDm && window.html2canvas) {
-        const stageEl = document.getElementById('vertical-dm-export-stage');
-        if (stageEl) {
-          await new Promise((resolve) => setTimeout(resolve, 250));
-          const canvas = await window.html2canvas(stageEl, {
-            scale: 1,
-            useCORS: true,
-            backgroundColor: '#FFFFFF'
-          });
-          triggerFileDownload(canvas.toDataURL('image/png'), `${safeTitle}_A4行程DM_${stamp}.png`);
-        }
       }
     } catch (err) {
       console.error('匯出 DM 失敗：', err);
@@ -1737,7 +1739,7 @@ const handleConfirmAdminPassword = (e) => {
                     {exportingDm ? (
                       <><Loader2 size={12} className="mr-1 animate-spin shrink-0" /> 產出中...</>
                     ) : (
-                      <><FileText size={12} className="mr-1 shrink-0" /> 匯出垂直 DM (PPT)</>
+                      <><FileText size={12} className="mr-1 shrink-0" /> {includePngWithDm ? '匯出 DM (PNG)' : '匯出 DM (PPT)'}</>
                     )}
                   </button>
                 </div>
@@ -1748,7 +1750,7 @@ const handleConfirmAdminPassword = (e) => {
                     onChange={(e) => setIncludePngWithDm(e.target.checked)}
                     className="mr-1 rounded border-gray-300"
                   />
-                  同時下載 PNG 圖片
+                  僅匯出圖片 (PNG)
                 </label>
               </div>
             </div>
@@ -2147,7 +2149,18 @@ const handleConfirmAdminPassword = (e) => {
           <div style={{ fontSize: '18px', letterSpacing: '2px', color: '#FDE68A', fontWeight: 700, marginBottom: '10px' }}>
             CORPORATE ACCESS & CLIENT INVITATION
           </div>
-          <div style={{ fontSize: '40px', fontWeight: 800, lineHeight: 1.24, marginBottom: '14px' }}>
+          <div
+            style={{
+              fontSize: '52px',
+              fontWeight: 900,
+              lineHeight: 1.2,
+              marginBottom: '16px',
+              borderLeft: '12px solid #FDE68A',
+              paddingLeft: '18px',
+              borderBottom: '4px solid #FDE68A',
+              paddingBottom: '10px'
+            }}
+          >
             {displayData?.eventTitle || '機構法人專屬參訪行程'}
           </div>
           <div style={{ fontSize: '21px', color: '#E2E8F0', lineHeight: 1.45 }}>
